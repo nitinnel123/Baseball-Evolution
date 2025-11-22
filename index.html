@@ -10,8 +10,8 @@
     <h1>OPS vs FIP Bubble Explorer (1950–2010)</h1>
     <p class="subtitle">
       Each bubble is a player-season with both hitting (OPS) and pitching (FIP) stats.
-      Bubble size ≈ innings pitched (IP). Color = league.
-      All calculations are done client-side from raw Lahman CSVs.
+      Bubble size emphasizes either OPS or FIP depending on the selected view.
+      Colors represent teams using MLB color mapping.
     </p>
   </header>
 
@@ -24,12 +24,9 @@
     </div>
 
     <div class="control-group">
-      <label for="league-select">League:</label>
-      <select id="league-select">
-        <option value="all">All leagues</option>
-        <option value="AL">AL</option>
-        <option value="NL">NL</option>
-      </select>
+      <span>View:</span>
+      <button id="view-ops" class="toggle-button active">OPS view</button>
+      <button id="view-fip" class="toggle-button">FIP view</button>
     </div>
   </section>
 

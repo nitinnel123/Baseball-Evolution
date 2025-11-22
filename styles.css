@@ -63,6 +63,15 @@ select:hover {
   border-color: #60a5fa;
 }
 
+.toggle-button {
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.toggle-button.active {
+  background: #2563eb;
+  border-color: #60a5fa;
+}
+
 main {
   padding: 1rem;
 }
