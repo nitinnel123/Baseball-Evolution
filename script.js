@@ -17,6 +17,7 @@ let currentView="ops";
 let useAllYears=false;
 let currentTeam="all";
 let currentRole="all";
+let selectedCircle=null;
 
 const yearSlider=document.getElementById("year-slider");
 const yearLabel=document.getElementById("year-label");
@@ -31,6 +32,11 @@ const tooltip=d3.select("#tooltip");
 
 function clearChart(){
   d3.select("#chart-container").selectAll("*").remove();
+  if(selectedCircle){
+    selectedCircle.classList.remove("selected");
+    selectedCircle=null;
+  }
+  document.getElementById("player-panel").classList.add("hidden");
 }
 
 function buildLegend(teams){
@@ -169,29 +175,32 @@ function drawOPS(){
   const data=filteredBatting();
   const svg=d3.select("#chart-container").append("svg")
     .attr("width",960).attr("height",600);
-  const g=svg.append("g").attr("transform","translate(70,40)");
+  const margin={top:40,right:20,bottom:70,left:70};
+  const innerWidth=960-margin.left-margin.right;
+  const innerHeight=600-margin.top-margin.bottom;
+  const g=svg.append("g").attr("transform",`translate(${margin.left},${margin.top})`);
 
-  const x=d3.scaleLinear().range([0,820])
+  const x=d3.scaleLinear().range([0,innerWidth])
     .domain(d3.extent(battingData,d=>d.AVG));
 
-  const y=d3.scaleLinear().range([500,0])
-    .domain(d3.extent(battingData,d=>d.HR));
+  const y=d3.scaleLinear().range([innerHeight,0])
+    .domain([0,d3.max(battingData,d=>d.HR)]);
 
   const r=d3.scaleSqrt().range([3,22])
     .domain(d3.extent(battingData,d=>d.OPS));
 
-  g.append("g").attr("transform","translate(0,500)").call(d3.axisBottom(x));
-  g.append("g").call(d3.axisLeft(y));
+  g.append("g").attr("transform",`translate(0,${innerHeight})`).attr("class","axis").call(d3.axisBottom(x));
+  g.append("g").attr("class","axis").call(d3.axisLeft(y));
 
   g.append("text")
-    .attr("x",410).attr("y",540)
+    .attr("x",innerWidth/2).attr("y",innerHeight+45)
     .attr("fill","#e5e7eb")
     .attr("text-anchor","middle")
     .text("Batting Average (AVG)");
 
   g.append("text")
     .attr("transform","rotate(-90)")
-    .attr("x",-250).attr("y",-45)
+    .attr("x",-innerHeight/2).attr("y",-45)
     .attr("fill","#e5e7eb")
     .attr("text-anchor","middle")
     .text("Home Runs (HR)");
@@ -201,9 +210,9 @@ function drawOPS(){
     .attr("fill","#e5e7eb")
     .text("AVG vs HR (bubble size = OPS)");
 
-  const xGrid=d3.axisBottom(x).tickSize(-500).tickFormat("");
-  const yGrid=d3.axisLeft(y).tickSize(-820).tickFormat("");
-  g.append("g").attr("class","grid").attr("transform","translate(0,500)").call(xGrid);
+  const xGrid=d3.axisBottom(x).tickSize(-innerHeight).tickFormat("");
+  const yGrid=d3.axisLeft(y).tickSize(-innerWidth).tickFormat("");
+  g.append("g").attr("class","grid").attr("transform",`translate(0,${innerHeight})`).call(xGrid);
   g.append("g").attr("class","grid").call(yGrid);
 
   g.selectAll("circle").data(data).enter().append("circle")
@@ -211,10 +220,11 @@ function drawOPS(){
     .attr("cy",d=>y(d.HR))
     .attr("r",d=>r(d.OPS))
     .attr("fill",d=>teamColor(d.teamID))
-    .attr("opacity",.8)
+    .attr("opacity",0.8)
     .on("mouseenter",showTipOPS)
     .on("mousemove",moveTip)
-    .on("mouseleave",hideTip);
+    .on("mouseleave",hideTip)
+    .on("click",function(e,d){selectPlayer(d,this);});
 }
 
 function drawFIP(){
@@ -222,29 +232,32 @@ function drawFIP(){
   const data=filteredPitching();
   const svg=d3.select("#chart-container").append("svg")
     .attr("width",960).attr("height",600);
-  const g=svg.append("g").attr("transform","translate(70,40)");
+  const margin={top:40,right:20,bottom:70,left:70};
+  const innerWidth=960-margin.left-margin.right;
+  const innerHeight=600-margin.top-margin.bottom;
+  const g=svg.append("g").attr("transform",`translate(${margin.left},${margin.top})`);
 
-  const x=d3.scaleLinear().range([0,820])
-    .domain(d3.extent(pitchingData,d=>d.K));
+  const x=d3.scaleLinear().range([0,innerWidth])
+    .domain([0,d3.max(pitchingData,d=>d.K)]);
 
-  const y=d3.scaleLinear().range([500,0])
-    .domain(d3.extent(pitchingData,d=>d.ERA));
+  const y=d3.scaleLinear().range([innerHeight,0])
+    .domain([0,d3.max(pitchingData,d=>d.ERA)]);
 
   const r=d3.scaleSqrt().range([3,22])
     .domain(d3.extent(pitchingData,d=>d.FIP));
 
-  g.append("g").attr("transform","translate(0,500)").call(d3.axisBottom(x));
-  g.append("g").call(d3.axisLeft(y));
+  g.append("g").attr("transform",`translate(0,${innerHeight})`).attr("class","axis").call(d3.axisBottom(x));
+  g.append("g").attr("class","axis").call(d3.axisLeft(y));
 
   g.append("text")
-    .attr("x",410).attr("y",540)
+    .attr("x",innerWidth/2).attr("y",innerHeight+45)
     .attr("fill","#e5e7eb")
     .attr("text-anchor","middle")
     .text("Strikeouts (K)");
 
   g.append("text")
     .attr("transform","rotate(-90)")
-    .attr("x",-250).attr("y",-45)
+    .attr("x",-innerHeight/2).attr("y",-45)
     .attr("fill","#e5e7eb")
     .attr("text-anchor","middle")
     .text("ERA");
@@ -254,9 +267,9 @@ function drawFIP(){
     .attr("fill","#e5e7eb")
     .text("K vs ERA (bubble size = FIP)");
 
-  const xGrid=d3.axisBottom(x).tickSize(-500).tickFormat("");
-  const yGrid=d3.axisLeft(y).tickSize(-820).tickFormat("");
-  g.append("g").attr("class","grid").attr("transform","translate(0,500)").call(xGrid);
+  const xGrid=d3.axisBottom(x).tickSize(-innerHeight).tickFormat("");
+  const yGrid=d3.axisLeft(y).tickSize(-innerWidth).tickFormat("");
+  g.append("g").attr("class","grid").attr("transform",`translate(0,${innerHeight})`).call(xGrid);
   g.append("g").attr("class","grid").call(yGrid);
 
   g.selectAll("circle").data(data).enter().append("circle")
@@ -264,10 +277,11 @@ function drawFIP(){
     .attr("cy",d=>y(d.ERA))
     .attr("r",d=>r(d.FIP))
     .attr("fill",d=>teamColor(d.teamID))
-    .attr("opacity",.8)
+    .attr("opacity",0.8)
     .on("mouseenter",showTipFIP)
     .on("mousemove",moveTip)
-    .on("mouseleave",hideTip);
+    .on("mouseleave",hideTip)
+    .on("click",function(e,d){selectPlayer(d,this);});
 }
 
 function showTipOPS(e,d){
@@ -291,6 +305,45 @@ function moveTip(e){
 function hideTip(){
   tooltip.style("opacity",0);
 }
+
+function selectPlayer(d,element){
+  if(selectedCircle){
+    selectedCircle.classList.remove("selected");
+  }
+  selectedCircle=element;
+  selectedCircle.classList.add("selected");
+  const panel=document.getElementById("player-panel");
+  const content=document.getElementById("panel-content");
+  if(currentView==="ops"){
+    content.textContent=
+      `${d.name}
+Year: ${d.yearID}
+Team: ${d.teamID}
+AB: ${d.AB}
+AVG: ${d.AVG.toFixed(3)}
+HR: ${d.HR}
+OPS: ${d.OPS.toFixed(3)}`;
+  }else{
+    content.textContent=
+      `${d.name}
+Year: ${d.yearID}
+Team: ${d.teamID}
+Role: ${d.role}
+IP: ${d.IP.toFixed(1)}
+K: ${d.K}
+ERA: ${d.ERA.toFixed(2)}
+FIP: ${d.FIP.toFixed(2)}`;
+  }
+  panel.classList.remove("hidden");
+}
+
+document.getElementById("panel-close").addEventListener("click",()=>{
+  document.getElementById("player-panel").classList.add("hidden");
+  if(selectedCircle){
+    selectedCircle.classList.remove("selected");
+    selectedCircle=null;
+  }
+});
 
 yearSlider.addEventListener("input",()=>{
   useAllYears=false;
@@ -345,49 +398,4 @@ btnRoleReliever.addEventListener("click",()=>{
   btnRoleAll.classList.remove("active");
   btnRoleStarter.classList.remove("active");
   currentView==="ops"?drawOPS():drawFIP();
-});
-
-let selectedCircle=null;
-
-function selectPlayer(d, element){
-  if(selectedCircle){
-    selectedCircle.classList.remove("selected");
-  }
-  selectedCircle=element;
-  selectedCircle.classList.add("selected");
-
-  const panel=document.getElementById("player-panel");
-  const content=document.getElementById("panel-content");
-
-  if(currentView==="ops"){
-    content.textContent=
-      `${d.name}
-Year: ${d.yearID}
-Team: ${d.teamID}
-AB: ${d.AB}
-AVG: ${d.AVG.toFixed(3)}
-HR: ${d.HR}
-OPS: ${d.OPS.toFixed(3)}`;
-  } else {
-    content.textContent=
-      `${d.name}
-Year: ${d.yearID}
-Team: ${d.teamID}
-Role: ${d.role}
-IP: ${d.IP.toFixed(1)}
-K: ${d.K}
-ERA: ${d.ERA.toFixed(2)}
-FIP: ${d.FIP.toFixed(2)}`;
-  }
-
-  panel.classList.remove("hidden");
-}
-
-document.getElementById("panel-close").addEventListener("click",()=>{
-  const panel=document.getElementById("player-panel");
-  panel.classList.add("hidden");
-  if(selectedCircle){
-    selectedCircle.classList.remove("selected");
-    selectedCircle=null;
-  }
 });

@@ -1,42 +1,26 @@
 body {
   margin: 0;
-  font-family: system-ui, sans-serif;
-  background: #0f172a;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #020617;
   color: #e5e7eb;
 }
 
-header {
-  text-align: center;
-  padding: 1.5rem 1rem .5rem;
-}
-
-h1 {
-  margin: 0;
-  font-size: 1.75rem;
-}
-
-.subtitle {
-  margin-top: .5rem;
-  font-size: .9rem;
-  color: #9ca3af;
-}
-
-.controls {
+#controls {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 1.5rem;
-  padding: .75rem 1rem .5rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1.5rem;
   background: #020617;
-  border-top: 1px solid #1f2937;
-  border-bottom: 1px solid #1f2937;
+  border-bottom: 1px solid #111827;
 }
 
 .control-group {
   display: flex;
   align-items: center;
-  gap: .5rem;
-  font-size: .9rem;
+  gap: 0.5rem;
+  white-space: nowrap;
+  font-size: 0.9rem;
 }
 
 label {
@@ -47,63 +31,74 @@ label {
   width: 180px;
 }
 
-button {
-  background: #111827;
-  color: #e5e7eb;
-  border: 1px solid #374151;
+.pill,
+.toggle-button {
   border-radius: 999px;
-  padding: .25rem .75rem;
-  font-size: .85rem;
+  border: 1px solid #374151;
+  background: #0b1120;
+  color: #e5e7eb;
+  padding: 0.25rem 0.8rem;
+  font-size: 0.85rem;
   cursor: pointer;
 }
 
-button:hover {
+.pill:hover,
+.toggle-button:hover {
   border-color: #60a5fa;
 }
 
-.toggle-button.active {
+.toggle-button.active,
+.pill.active {
   background: #2563eb;
   border-color: #60a5fa;
 }
 
 select {
-  background: #111827;
-  color: #e5e7eb;
-  border: 1px solid #374151;
   border-radius: 999px;
-  padding: .25rem .5rem;
-  font-size: .85rem;
+  border: 1px solid #374151;
+  background: #0b1120;
+  color: #e5e7eb;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.85rem;
 }
 
-select:hover {
+select:focus {
+  outline: none;
   border-color: #60a5fa;
 }
 
-main {
-  padding: 1rem;
+#main-layout {
+  display: flex;
+  padding: 0.75rem 1.5rem 1.5rem;
+  gap: 1rem;
+}
+
+#chart-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 #chart-container {
-  max-width: 1050px;
-  margin: 0 auto;
   background: #020617;
   border-radius: 1rem;
-  padding: 1rem;
+  padding: 0.75rem;
+  border: 1px solid #111827;
 }
 
 #legend-container {
-  max-width: 1050px;
-  margin: .5rem auto 0;
   display: flex;
   flex-wrap: wrap;
-  gap: .35rem .85rem;
-  font-size: .8rem;
+  gap: 0.3rem 0.8rem;
+  font-size: 0.8rem;
+  padding: 0.25rem 0.5rem;
 }
 
 .legend-item {
   display: inline-flex;
   align-items: center;
-  gap: .25rem;
+  gap: 0.25rem;
 }
 
 .legend-swatch {
@@ -113,20 +108,50 @@ main {
   border: 1px solid #020617;
 }
 
-.tooltip {
+#player-panel {
+  width: 280px;
+  background: #020617;
+  border-radius: 1rem;
+  border: 1px solid #111827;
+  padding: 0.75rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  font-size: 0.9rem;
+}
+
+.hidden {
+  display: none;
+}
+
+#panel-close {
+  font-size: 20px;
+  line-height: 1;
+  text-align: right;
+  cursor: pointer;
+  color: #9ca3af;
+  margin-bottom: 0.5rem;
+}
+
+#panel-content {
+  white-space: pre-line;
+  color: #e5e7eb;
+}
+
+#tooltip {
   position: absolute;
   pointer-events: none;
-  background: rgba(15,23,42,.96);
+  opacity: 0;
+  background: rgba(15,23,42,0.98);
   color: #f9fafb;
-  padding: .5rem .75rem;
-  border-radius: .5rem;
-  font-size: .8rem;
+  padding: 0.45rem 0.7rem;
+  border-radius: 0.5rem;
+  font-size: 0.8rem;
   border: 1px solid #4b5563;
 }
 
 .axis text {
   fill: #e5e7eb;
-  font-size: .8rem;
+  font-size: 0.8rem;
 }
 
 .axis path,
@@ -141,43 +166,6 @@ main {
 
 .grid path {
   stroke: none;
-}
-
-#main-layout {
-  display: flex;
-  width: 100%;
-}
-
-#chart-area {
-  flex: 1;
-}
-
-#player-panel {
-  width: 280px;
-  background: #111827;
-  color: #e5e7eb;
-  padding: 16px;
-  border-left: 2px solid #374151;
-  display: flex;
-  flex-direction: column;
-}
-
-.hidden {
-  display: none;
-}
-
-#panel-close {
-  font-size: 22px;
-  cursor: pointer;
-  text-align: right;
-  margin-bottom: 10px;
-  color: #9ca3af;
-}
-
-#panel-content {
-  font-size: 15px;
-  line-height: 1.4;
-  white-space: pre-line;
 }
 
 circle.selected {
