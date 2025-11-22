@@ -60,8 +60,9 @@ Promise.all([
     const TB=(sng>0?sng:0)+2*db+3*tr+4*HR;
     const SLG=AB>0?TB/AB:NaN;
     const OPS=OBP+SLG;
-    if(!Number.isFinite(OPS))return null;
-    return{playerID:d.playerID,yearID:d.yearID,OPS};
+    const AVG=AB>0?H/AB:NaN;
+    if(!Number.isFinite(OPS)||!Number.isFinite(AVG))return null;
+    return{playerID:d.playerID,yearID:d.yearID,OPS,AVG};
   }).filter(d=>d);
 
   const FIP_CONSTANT=3.1;
@@ -71,7 +72,7 @@ Promise.all([
     const FIP_raw=(13*HR+3*(BB+HBP)-2*SO)/IP;
     const FIP=FIP_raw+FIP_CONSTANT;
     if(!Number.isFinite(FIP))return null;
-    return{playerID:d.playerID,yearID:d.yearID,FIP,IP,teamID:d.teamID};
+    return{playerID:d.playerID,yearID:d.yearID,FIP,IP,K:SO,teamID:d.teamID};
   }).filter(d=>d);
 
   const batMap=new Map();
@@ -99,8 +100,10 @@ Promise.all([
       teamID:p.teamID,
       lgID:lg,
       OPS:b.OPS,
+      AVG:b.AVG,
       FIP:p.FIP,
-      IP:p.IP
+      IP:p.IP,
+      K:p.K
     });
   });
 
@@ -140,27 +143,27 @@ function drawOPS(){
     .attr("width",960).attr("height",600);
   const g=svg.append("g").attr("transform","translate(70,40)");
   const x=d3.scaleLinear().range([0,820])
-    .domain(d3.extent(fullData,d=>d.OPS));
+    .domain(d3.extent(fullData,d=>d.AVG));
   const y=d3.scaleLinear().range([500,0])
-    .domain(d3.extent(fullData,d=>d.FIP));
+    .domain(d3.extent(fullData,d=>d.OPS));
   const r=d3.scaleSqrt().range([3,22])
     .domain(d3.extent(fullData,d=>d.OPS));
-  const xAxis=g.append("g").attr("transform","translate(0,500)")
+  g.append("g").attr("transform","translate(0,500)")
     .attr("class","axis")
     .call(d3.axisBottom(x));
-  const yAxis=g.append("g").attr("class","axis")
+  g.append("g").attr("class","axis")
     .call(d3.axisLeft(y));
   g.append("text")
     .attr("x",410).attr("y",540)
     .attr("fill","#e5e7eb")
     .attr("text-anchor","middle")
-    .text("OPS");
+    .text("Batting Average (AVG)");
   g.append("text")
     .attr("transform","rotate(-90)")
     .attr("x",-250).attr("y",-45)
     .attr("fill","#e5e7eb")
     .attr("text-anchor","middle")
-    .text("FIP");
+    .text("OPS");
   const xGrid=d3.axisBottom(x).tickSize(-500).tickFormat("");
   const yGrid=d3.axisLeft(y).tickSize(-820).tickFormat("");
   g.append("g").attr("class","grid").attr("transform","translate(0,500)").call(xGrid);
@@ -168,14 +171,14 @@ function drawOPS(){
   g.append("text")
     .attr("x",0).attr("y",-10)
     .attr("fill","#e5e7eb")
-    .text("OPS vs FIP (bubble size = OPS)");
+    .text("OPS vs AVG (bubble size = OPS)");
   g.selectAll("circle").data(data).enter().append("circle")
-    .attr("cx",d=>x(d.OPS))
-    .attr("cy",d=>y(d.FIP))
+    .attr("cx",d=>x(d.AVG))
+    .attr("cy",d=>y(d.OPS))
     .attr("r",d=>r(d.OPS))
     .attr("fill",d=>teamColor(d.teamID))
     .attr("opacity",.8)
-    .on("mouseenter",showTip)
+    .on("mouseenter",showTipOPS)
     .on("mousemove",moveTip)
     .on("mouseleave",hideTip);
 }
@@ -187,7 +190,7 @@ function drawFIP(){
     .attr("width",960).attr("height",600);
   const g=svg.append("g").attr("transform","translate(70,40)");
   const x=d3.scaleLinear().range([0,820])
-    .domain(d3.extent(fullData,d=>d.OPS));
+    .domain(d3.extent(fullData,d=>d.K));
   const y=d3.scaleLinear().range([500,0])
     .domain(d3.extent(fullData,d=>d.FIP));
   const r=d3.scaleSqrt().range([3,22])
@@ -201,7 +204,7 @@ function drawFIP(){
     .attr("x",410).attr("y",540)
     .attr("fill","#e5e7eb")
     .attr("text-anchor","middle")
-    .text("OPS");
+    .text("Strikeouts (K)");
   g.append("text")
     .attr("transform","rotate(-90)")
     .attr("x",-250).attr("y",-45)
@@ -215,22 +218,28 @@ function drawFIP(){
   g.append("text")
     .attr("x",0).attr("y",-10)
     .attr("fill","#e5e7eb")
-    .text("OPS vs FIP (bubble size = FIP)");
+    .text("FIP vs K (bubble size = FIP)");
   g.selectAll("circle").data(data).enter().append("circle")
-    .attr("cx",d=>x(d.OPS))
+    .attr("cx",d=>x(d.K))
     .attr("cy",d=>y(d.FIP))
     .attr("r",d=>r(d.FIP))
     .attr("fill",d=>teamColor(d.teamID))
     .attr("opacity",.8)
-    .on("mouseenter",showTip)
+    .on("mouseenter",showTipFIP)
     .on("mousemove",moveTip)
     .on("mouseleave",hideTip);
 }
 
-function showTip(e,d){
+function showTipOPS(e,d){
   tooltip
     .style("opacity",1)
-    .html(`<strong>${d.name}</strong><br>Year: ${d.yearID}<br>Team: ${d.teamID}<br>OPS: ${d.OPS.toFixed(3)}<br>FIP: ${d.FIP.toFixed(2)}<br>IP: ${d.IP.toFixed(1)}`);
+    .html(`<strong>${d.name}</strong><br>Year: ${d.yearID}<br>Team: ${d.teamID}<br>AVG: ${d.AVG.toFixed(3)}<br>OPS: ${d.OPS.toFixed(3)}<br>IP: ${d.IP.toFixed(1)}`);
+}
+
+function showTipFIP(e,d){
+  tooltip
+    .style("opacity",1)
+    .html(`<strong>${d.name}</strong><br>Year: ${d.yearID}<br>Team: ${d.teamID}<br>K: ${d.K}<br>FIP: ${d.FIP.toFixed(2)}<br>IP: ${d.IP.toFixed(1)}`);
 }
 
 function moveTip(e){
