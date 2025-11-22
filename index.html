@@ -10,6 +10,7 @@
 <body>
 
 <div id="controls">
+
   <div class="control-group">
     <label>Year:</label>
     <input type="range" id="year-slider" min="1970" max="2015" value="1970">
@@ -24,7 +25,7 @@
     </select>
   </div>
 
-  <div class="control-group">
+  <div id="role-group" class="control-group" style="display:none;">
     <label>Pitcher role:</label>
     <button id="role-all" class="pill active">All</button>
     <button id="role-starter" class="pill">Starters</button>
@@ -35,6 +36,7 @@
     <button id="view-ops" class="toggle-button active">AVG vs HR</button>
     <button id="view-fip" class="toggle-button">K vs ERA</button>
   </div>
+
 </div>
 
 <div id="main-layout">
@@ -42,6 +44,7 @@
     <div id="chart-container"></div>
     <div id="legend-container"></div>
   </div>
+
   <div id="player-panel" class="hidden">
     <div id="panel-content"></div>
   </div>

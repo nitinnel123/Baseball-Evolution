@@ -28,6 +28,7 @@ const teamSelect=document.getElementById("team-select");
 const btnRoleAll=document.getElementById("role-all");
 const btnRoleStarter=document.getElementById("role-starter");
 const btnRoleReliever=document.getElementById("role-reliever");
+const roleGroup=document.getElementById("role-group");
 const tooltip=d3.select("#tooltip");
 
 function clearChart(){
@@ -130,14 +131,6 @@ Promise.all([
     };
   }).filter(d=>d);
 
-  const allYears=[...battingData.map(d=>d.yearID),...pitchingData.map(d=>d.yearID)];
-  const years=d3.extent(allYears);
-  yearSlider.min=1970;
-  yearSlider.max=2015;
-  yearSlider.value=1970;
-  yearLabel.textContent=`Year: 1970`;
-  useAllYears=false;
-
   const allTeams=new Set();
   battingData.forEach(d=>allTeams.add(d.teamID));
   pitchingData.forEach(d=>allTeams.add(d.teamID));
@@ -172,12 +165,16 @@ function filteredPitching(){
 
 function drawOPS(){
   clearChart();
+  roleGroup.style.display="none";
+
   const data=filteredBatting();
   const svg=d3.select("#chart-container").append("svg")
     .attr("width",960).attr("height",600);
+
   const margin={top:40,right:20,bottom:70,left:70};
   const innerWidth=960-margin.left-margin.right;
   const innerHeight=600-margin.top-margin.bottom;
+
   const g=svg.append("g").attr("transform",`translate(${margin.left},${margin.top})`);
 
   const x=d3.scaleLinear().range([0,innerWidth])
@@ -229,12 +226,16 @@ function drawOPS(){
 
 function drawFIP(){
   clearChart();
+  roleGroup.style.display="flex";
+
   const data=filteredPitching();
   const svg=d3.select("#chart-container").append("svg")
     .attr("width",960).attr("height",600);
+
   const margin={top:40,right:20,bottom:70,left:70};
   const innerWidth=960-margin.left-margin.right;
   const innerHeight=600-margin.top-margin.bottom;
+
   const g=svg.append("g").attr("transform",`translate(${margin.left},${margin.top})`);
 
   const x=d3.scaleLinear().range([0,innerWidth])
@@ -312,8 +313,10 @@ function selectPlayer(d,element){
   }
   selectedCircle=element;
   selectedCircle.classList.add("selected");
+
   const panel=document.getElementById("player-panel");
   const content=document.getElementById("panel-content");
+
   if(currentView==="ops"){
     content.textContent=
 `${d.name}
@@ -323,7 +326,7 @@ AB: ${d.AB}
 AVG: ${d.AVG.toFixed(3)}
 HR: ${d.HR}
 OPS: ${d.OPS.toFixed(3)}`;
-  }else{
+  } else {
     content.textContent=
 `${d.name}
 Year: ${d.yearID}
@@ -334,6 +337,7 @@ K: ${d.K}
 ERA: ${d.ERA.toFixed(2)}
 FIP: ${d.FIP.toFixed(2)}`;
   }
+
   panel.classList.remove("hidden");
 }
 
@@ -353,6 +357,7 @@ btnOPS.addEventListener("click",()=>{
   currentView="ops";
   btnOPS.classList.add("active");
   btnFIP.classList.remove("active");
+  roleGroup.style.display="none";
   drawOPS();
 });
 
@@ -360,6 +365,7 @@ btnFIP.addEventListener("click",()=>{
   currentView="fip";
   btnFIP.classList.add("active");
   btnOPS.classList.remove("active");
+  roleGroup.style.display="flex";
   drawFIP();
 });
 
@@ -373,7 +379,7 @@ btnRoleAll.addEventListener("click",()=>{
   btnRoleAll.classList.add("active");
   btnRoleStarter.classList.remove("active");
   btnRoleReliever.classList.remove("active");
-  currentView==="ops"?drawOPS():drawFIP();
+  drawFIP();
 });
 
 btnRoleStarter.addEventListener("click",()=>{
@@ -381,7 +387,7 @@ btnRoleStarter.addEventListener("click",()=>{
   btnRoleStarter.classList.add("active");
   btnRoleAll.classList.remove("active");
   btnRoleReliever.classList.remove("active");
-  currentView==="ops"?drawOPS():drawFIP();
+  drawFIP();
 });
 
 btnRoleReliever.addEventListener("click",()=>{
@@ -389,5 +395,5 @@ btnRoleReliever.addEventListener("click",()=>{
   btnRoleReliever.classList.add("active");
   btnRoleAll.classList.remove("active");
   btnRoleStarter.classList.remove("active");
-  currentView==="ops"?drawOPS():drawFIP();
+  drawFIP();
 });

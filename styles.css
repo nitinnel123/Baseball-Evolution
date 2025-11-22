@@ -62,11 +62,6 @@ select {
   font-size: 0.85rem;
 }
 
-select:focus {
-  outline: none;
-  border-color: #60a5fa;
-}
-
 #main-layout {
   display: flex;
   padding: 0.75rem 1.5rem 1.5rem;
@@ -149,7 +144,6 @@ select:focus {
 .axis line {
   stroke: #4b5563;
 }
-
 
 .grid line {
   stroke: #1e293b;
