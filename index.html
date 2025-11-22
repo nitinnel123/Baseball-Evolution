@@ -52,6 +52,24 @@
 
 <div id="tooltip"></div>
 
+<div id="writeup-section">
+  <h2>Project Writeup</h2>
+
+  <p>
+    We have built an interactive MLB performance dashboard that visualizes both hitting and pitching data from 1970 to 2015. 
+    For hitters, the chart shows AVG vs HR with OPS determining bubble size, allowing users to compare power and contact efficiency simultaneously. 
+    For pitchers, the chart displays K vs ERA with FIP as bubble size, giving insight into strikeout ability and run prevention. 
+    The interface includes filters for year, team, and pitcher role, along with hover tooltips and a click-to-view player panel summarizing key statistics. 
+  </p>
+
+  <p>
+    The most challenging component will likely be managing visual clarity as more layers of interaction and filtering are added. 
+    Baseball datasets contain large numbers of players per season, so avoiding overplotting while keeping all bubbles interpretable can be difficult. 
+    Ensuring the panel, legend, tooltips, and controls remain readable and well-aligned across various screen sizes also adds complexity. 
+    Balancing accuracy, performance, and visual simplicity while still presenting meaningful comparisons is the core design challenge.
+  </p>
+</div>
+
 <script src="script.js"></script>
 </body>
 </html>

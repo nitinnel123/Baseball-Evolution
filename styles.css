@@ -158,3 +158,27 @@ circle.selected {
   stroke: #ffffff;
   stroke-width: 2px;
 }
+
+#writeup-section {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: #0b1120;
+  border: 1px solid #1e293b;
+  border-radius: 1rem;
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+#writeup-section h2 {
+  margin-top: 0;
+  color: #e5e7eb;
+  font-weight: 600;
+}
+
+#writeup-section p {
+  line-height: 1.5;
+  color: #e5e7eb;
+  font-size: 0.95rem;
+  margin-bottom: 1.5rem;
+}
