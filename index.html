@@ -1,52 +1,51 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>OPS & FIP Explorer</title>
-  <link rel="stylesheet" href="styles.css" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MLB Dashboard</title>
+<link rel="stylesheet" href="styles.css" />
+<script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
+
 <body>
-  <header>
-    <h1>OPS & FIP Bubble Explorer (1950–2010)</h1>
-    <p class="subtitle">OPS vs AVG for hitters, FIP vs K for pitchers. Colors represent teams. Filter by year, team, and pitcher role.</p>
-  </header>
 
-  <section class="controls">
-    <div class="control-group">
-      <label for="year-slider">Year:</label>
-      <input type="range" id="year-slider" min="1950" max="2010" step="1" />
-      <span id="year-label">All years</span>
-      <button id="year-reset">All years</button>
-    </div>
+<div id="controls">
+  <div class="control-group">
+    <label>Year:</label>
+    <input type="range" id="year-slider" min="1950" max="2010" value="1950">
+    <span id="year-label">Year: 1950</span>
+    <button id="year-reset" class="pill">All years</button>
+  </div>
 
-    <div class="control-group">
-      <label for="team-select">Team:</label>
-      <select id="team-select">
-        <option value="all">All teams</option>
-      </select>
-    </div>
+  <div class="control-group">
+    <label>Team:</label>
+    <select id="team-select">
+      <option value="all">All teams</option>
+    </select>
+  </div>
 
-    <div class="control-group">
-      <span>Pitcher role:</span>
-      <button id="role-all" class="toggle-button active">All</button>
-      <button id="role-starter" class="toggle-button">Starters</button>
-      <button id="role-reliever" class="toggle-button">Relievers</button>
-    </div>
+  <div class="control-group">
+    <label>Pitcher role:</label>
+    <button id="role-all" class="pill active">All</button>
+    <button id="role-starter" class="pill">Starters</button>
+    <button id="role-reliever" class="pill">Relievers</button>
+  </div>
 
-    <div class="control-group">
-      <button id="view-ops" class="toggle-button active">OPS vs AVG</button>
-      <button id="view-fip" class="toggle-button">FIP vs K</button>
-    </div>
-  </section>
+  <div class="control-group">
+    <button id="view-ops" class="toggle-button active">AVG vs HR</button>
+    <button id="view-fip" class="toggle-button">K vs ERA</button>
+  </div>
+</div>
 
-  <main>
-    <div id="chart-container"></div>
-    <div id="legend-container"></div>
-  </main>
+<div id="chart-area">
+  <div id="chart-container"></div>
+</div>
 
-  <div id="tooltip" class="tooltip" style="opacity:0"></div>
+<div id="legend-container"></div>
 
-  <script src="https://d3js.org/d3.v7.min.js"></script>
-  <script src="script.js"></script>
+<div id="tooltip"></div>
+
+<script src="script.js"></script>
 </body>
 </html>
