@@ -1,444 +1,275 @@
-const margin = { top: 40, right: 40, bottom: 60, left: 70 };
-const width = 900 - margin.left - margin.right;
-const height = 550 - margin.top - margin.bottom;
-
-const container = d3.select("#chart-container");
-
-const svg = container
-  .append("svg")
-  .attr(
-    "viewBox",
-    `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`
-  )
-  .attr("width", width + margin.left + margin.right)
-  .attr("height", height + margin.top + margin.bottom);
-
-const g = svg
-  .append("g")
-  .attr("transform", `translate(${margin.left},${margin.top})`);
-
-const tooltip = d3.select("#tooltip");
-
-const xScale = d3.scaleLinear().range([0, width]);
-const yScale = d3.scaleLinear().range([height, 0]);
-const rScaleOPS = d3.scaleSqrt().range([3, 18]);
-const rScaleFIP = d3.scaleSqrt().range([3, 18]);
-
-const teamColors = {
-  BAL: "#DF4601",
-  BOS: "#BD3039",
-  CHA: "#27251F",
-  CHW: "#27251F",
-  CLE: "#0C2340",
-  DET: "#0C2340",
-  HOU: "#EB6E1F",
-  KCA: "#004687",
-  KCR: "#004687",
-  LAA: "#BA0021",
-  MIN: "#0C2340",
-  NYA: "#1C2841",
-  NYY: "#1C2841",
-  OAK: "#003831",
-  SEA: "#005C5C",
-  TBA: "#8FBCE6",
-  TBR: "#8FBCE6",
-  TEX: "#003278",
-  TOR: "#134A8E",
-  ARI: "#A71930",
-  ATL: "#CE1141",
-  CHN: "#0E3386",
-  CHC: "#0E3386",
-  CIN: "#C6011F",
-  COL: "#33006F",
-  FLO: "#00A3E0",
-  FLA: "#00A3E0",
-  LAN: "#005A9C",
-  LAD: "#005A9C",
-  MIA: "#00A3E0",
-  MIL: "#12284B",
-  MON: "#004B8D",
-  NYN: "#FF5910",
-  NYM: "#FF5910",
-  PHI: "#E81828",
-  PIT: "#FDB827",
-  SDN: "#2F241D",
-  SDP: "#2F241D",
-  SFN: "#FD5A1E",
-  SFG: "#FD5A1E",
-  SLN: "#C41E3A",
-  STL: "#C41E3A",
-  WAS: "#AB0003",
-  WSN: "#AB0003",
-  BRO: "#005A9C",
-  BSN: "#CE1141",
-  MLN: "#CE1141",
-  SEP: "#555555"
+const teamColors={
+BAL:"#DF4601",BOS:"#BD3039",CHA:"#27251F",CHW:"#27251F",CLE:"#0C2340",DET:"#0C2340",
+HOU:"#EB6E1F",KCA:"#004687",KCR:"#004687",LAA:"#BA0021",MIN:"#0C2340",NYA:"#1C2841",
+NYY:"#1C2841",OAK:"#003831",SEA:"#005C5C",TBA:"#8FBCE6",TBR:"#8FBCE6",TEX:"#003278",
+TOR:"#134A8E",ARI:"#A71930",ATL:"#CE1141",CHN:"#0E3386",CHC:"#0E3386",CIN:"#C6011F",
+COL:"#33006F",FLO:"#00A3E0",FLA:"#00A3E0",LAN:"#005A9C",LAD:"#005A9C",MIA:"#00A3E0",
+MIL:"#12284B",MON:"#004B8D",NYN:"#FF5910",NYM:"#FF5910",PHI:"#E81828",PIT:"#FDB827",
+SDN:"#2F241D",SDP:"#2F241D",SFN:"#FD5A1E",SFG:"#FD5A1E",SLN:"#C41E3A",STL:"#C41E3A",
+WAS:"#AB0003",WSN:"#AB0003",BRO:"#005A9C",BSN:"#CE1141",MLN:"#CE1141",SEP:"#555555"
 };
+const fallback=d3.scaleOrdinal(d3.schemeTableau10);
+function teamColor(id){return teamColors[id]||fallback(id);}
 
-const fallbackColorScale = d3.scaleOrdinal(d3.schemeTableau10);
+let fullData=[];
+let currentView="ops";
+let useAllYears=false;
+let currentTeam="all";
 
-function getTeamColor(teamID) {
-  if (teamColors[teamID]) return teamColors[teamID];
-  return fallbackColorScale(teamID);
+const yearSlider=document.getElementById("year-slider");
+const yearLabel=document.getElementById("year-label");
+const yearReset=document.getElementById("year-reset");
+const btnOPS=document.getElementById("view-ops");
+const btnFIP=document.getElementById("view-fip");
+const teamSelect=document.getElementById("team-select");
+const tooltip=d3.select("#tooltip");
+
+function clearChart(){
+  d3.select("#chart-container").selectAll("*").remove();
 }
 
-const xAxisGroup = g
-  .append("g")
-  .attr("class", "axis x-axis")
-  .attr("transform", `translate(0, ${height})`);
-
-const yAxisGroup = g.append("g").attr("class", "axis y-axis");
-
-const xGridGroup = g
-  .append("g")
-  .attr("class", "grid x-grid")
-  .attr("transform", `translate(0, ${height})`);
-
-const yGridGroup = g.append("g").attr("class", "grid y-grid");
-
-g.append("text")
-  .attr("class", "x-label")
-  .attr("x", width / 2)
-  .attr("y", height + 45)
-  .attr("text-anchor", "middle")
-  .attr("fill", "#e5e7eb")
-  .style("font-size", "0.9rem")
-  .text("OPS (On-Base Plus Slugging)");
-
-const yLabel = g
-  .append("text")
-  .attr("class", "y-label")
-  .attr("x", -height / 2)
-  .attr("y", -50)
-  .attr("transform", "rotate(-90)")
-  .attr("text-anchor", "middle")
-  .attr("fill", "#e5e7eb")
-  .style("font-size", "0.9rem")
-  .text("FIP (Fielding Independent Pitching)");
-
-const chartTitle = g
-  .append("text")
-  .attr("x", 0)
-  .attr("y", -10)
-  .attr("fill", "#e5e7eb")
-  .style("font-size", "0.95rem")
-  .text("OPS vs FIP (bubble size = OPS)");
-
-const legendGroup = g
-  .append("g")
-  .attr("class", "legend")
-  .attr("transform", `translate(${width - 120}, 0)`);
-
-const yearSlider = document.getElementById("year-slider");
-const yearLabel = document.getElementById("year-label");
-const yearResetBtn = document.getElementById("year-reset");
-const viewOpsBtn = document.getElementById("view-ops");
-const viewFipBtn = document.getElementById("view-fip");
-
-let fullData = [];
-let filteredData = [];
-let currentView = "ops";
+function buildLegend(teams){
+  const c=d3.select("#legend-container");
+  c.selectAll("*").remove();
+  const items=c.selectAll(".legend-item")
+    .data(teams)
+    .enter()
+    .append("div")
+    .attr("class","legend-item");
+  items.append("span")
+    .attr("class","legend-swatch")
+    .style("background-color",d=>teamColor(d));
+  items.append("span").text(d=>d);
+}
 
 Promise.all([
-  d3.csv("datasets/Batting.csv", d3.autoType),
-  d3.csv("datasets/Pitching.csv", d3.autoType),
-  d3.csv("datasets/Master.csv", d3.autoType),
-  d3.csv("datasets/Teams.csv", d3.autoType)
-]).then(([batRaw, pitRaw, master, teams]) => {
-  const bat = batRaw.filter(
-    (d) => d.yearID >= 1950 && d.yearID <= 2010
-  );
-  const pit = pitRaw.filter(
-    (d) => d.yearID >= 1950 && d.yearID <= 2010
-  );
+  d3.csv("datasets/Batting.csv",d3.autoType),
+  d3.csv("datasets/Pitching.csv",d3.autoType),
+  d3.csv("datasets/Master.csv",d3.autoType),
+  d3.csv("datasets/Teams.csv",d3.autoType)
+]).then(([batRaw,pitRaw,master,teams])=>{
+  const bat=batRaw.filter(d=>d.yearID>=1950&&d.yearID<=2010);
+  const pit=pitRaw.filter(d=>d.yearID>=1950&&d.yearID<=2010);
 
-  const batProcessed = bat
-    .map((d) => {
-      const H = d.H || 0;
-      const BB = d.BB || 0;
-      const HBP = d.HBP || 0;
-      const AB = d.AB || 0;
-      const SF = d.SF || 0;
-      const doubles = d["2B"] || 0;
-      const triples = d["3B"] || 0;
-      const HR = d.HR || 0;
-      if (AB <= 0) return null;
-      const singles = H - doubles - triples - HR;
-      const obpDen = AB + BB + HBP + SF;
-      const OBP = obpDen > 0 ? (H + BB + HBP) / obpDen : NaN;
-      const TB =
-        (singles > 0 ? singles : 0) +
-        2 * doubles +
-        3 * triples +
-        4 * HR;
-      const SLG = AB > 0 ? TB / AB : NaN;
-      const OPS = OBP + SLG;
-      if (!Number.isFinite(OPS)) return null;
-      return {
-        playerID: d.playerID,
-        yearID: d.yearID,
-        OPS
-      };
-    })
-    .filter((d) => d !== null);
+  const batProcessed=bat.map(d=>{
+    const H=d.H||0,BB=d.BB||0,HBP=d.HBP||0,AB=d.AB||0,SF=d.SF||0,db=d["2B"]||0,tr=d["3B"]||0,HR=d.HR||0;
+    if(AB<=0)return null;
+    const sng=H-db-tr-HR;
+    const obpDen=AB+BB+HBP+SF;
+    const OBP=obpDen>0?(H+BB+HBP)/obpDen:NaN;
+    const TB=(sng>0?sng:0)+2*db+3*tr+4*HR;
+    const SLG=AB>0?TB/AB:NaN;
+    const OPS=OBP+SLG;
+    if(!Number.isFinite(OPS))return null;
+    return{playerID:d.playerID,yearID:d.yearID,OPS};
+  }).filter(d=>d);
 
-  const FIP_CONSTANT = 3.1;
+  const FIP_CONSTANT=3.1;
+  const pitProcessed=pit.map(d=>{
+    const HR=d.HR||0,BB=d.BB||0,SO=d.SO||0,HBP=d.HBP||0,IPouts=d.IPouts||0,IP=IPouts/3;
+    if(IP<=0)return null;
+    const FIP_raw=(13*HR+3*(BB+HBP)-2*SO)/IP;
+    const FIP=FIP_raw+FIP_CONSTANT;
+    if(!Number.isFinite(FIP))return null;
+    return{playerID:d.playerID,yearID:d.yearID,FIP,IP,teamID:d.teamID};
+  }).filter(d=>d);
 
-  const pitProcessed = pit
-    .map((d) => {
-      const HR = d.HR || 0;
-      const BB = d.BB || 0;
-      const SO = d.SO || 0;
-      const HBP = d.HBP || 0;
-      const IPouts = d.IPouts || 0;
-      const IP = IPouts / 3;
-      if (IP <= 0) return null;
-      const FIP_raw =
-        (13 * HR + 3 * (BB + HBP) - 2 * SO) / IP;
-      const FIP = FIP_raw + FIP_CONSTANT;
-      if (!Number.isFinite(FIP)) return null;
-      return {
-        playerID: d.playerID,
-        yearID: d.yearID,
-        FIP,
-        IP,
-        teamID: d.teamID
-      };
-    })
-    .filter((d) => d !== null);
+  const batMap=new Map();
+  batProcessed.forEach(b=>batMap.set(`${b.playerID}|${b.yearID}`,b));
 
-  const batMap = new Map();
-  batProcessed.forEach((b) => {
-    batMap.set(`${b.playerID}|${b.yearID}`, b);
+  const nameMap=new Map();
+  master.forEach(m=>{
+    const n=`${m.nameFirst||""} ${m.nameLast||""}`.trim();
+    nameMap.set(m.playerID,n);
   });
 
-  const nameMap = new Map();
-  master.forEach((m) => {
-    const first = m.nameFirst || "";
-    const last = m.nameLast || "";
-    const name = `${first} ${last}`.trim();
-    nameMap.set(m.playerID, name);
-  });
+  const lgMap=new Map();
+  teams.forEach(t=>lgMap.set(`${t.yearID}|${t.teamID}`,t.lgID));
 
-  const leagueMap = new Map();
-  teams.forEach((t) => {
-    const key = `${t.yearID}|${t.teamID}`;
-    leagueMap.set(key, t.lgID);
-  });
-
-  const merged = [];
-
-  pitProcessed.forEach((p) => {
-    const key = `${p.playerID}|${p.yearID}`;
-    const b = batMap.get(key);
-    if (!b) return;
-    const playerID = p.playerID;
-    const yearID = p.yearID;
-    const OPS = b.OPS;
-    const FIP = p.FIP;
-    const IP = p.IP;
-    const teamID = p.teamID;
-    const name = nameMap.get(playerID) || playerID;
-    const lgKey = `${yearID}|${teamID}`;
-    const lgID = leagueMap.get(lgKey) || "UNK";
+  const merged=[];
+  pitProcessed.forEach(p=>{
+    const b=batMap.get(`${p.playerID}|${p.yearID}`);
+    if(!b)return;
+    const n=nameMap.get(p.playerID)||p.playerID;
+    const lg=lgMap.get(`${p.yearID}|${p.teamID}`)||"UNK";
     merged.push({
-      playerID,
-      name,
-      yearID,
-      teamID,
-      lgID,
-      OPS,
-      FIP,
-      IP
+      playerID:p.playerID,
+      name:n,
+      yearID:p.yearID,
+      teamID:p.teamID,
+      lgID:lg,
+      OPS:b.OPS,
+      FIP:p.FIP,
+      IP:p.IP
     });
   });
 
-  fullData = merged;
+  fullData=merged;
 
-  const yearsExtent = d3.extent(fullData, (d) => d.yearID);
-  const [minYear, maxYear] = yearsExtent[0]
-    ? yearsExtent
-    : [1950, 2010];
+  const years=d3.extent(fullData,d=>d.yearID);
+  yearSlider.min=years[0];
+  yearSlider.max=years[1];
+  yearSlider.value=years[0];
+  yearLabel.textContent=`Year: ${years[0]}`;
+  useAllYears=false;
 
-  yearSlider.min = minYear;
-  yearSlider.max = maxYear;
-  yearSlider.value = minYear;
-  yearLabel.textContent = `Year: ${yearSlider.value} (use "All years" to reset)`;
-
-  const xExtent = d3.extent(fullData, (d) => d.OPS);
-  const yExtent = d3.extent(fullData, (d) => d.FIP);
-  const opsExtent = xExtent;
-  const fipExtent = yExtent;
-
-  const xPad = 0.05;
-  xScale.domain([
-    (xExtent[0] ?? 0.5) - xPad,
-    (xExtent[1] ?? 1.2) + xPad
-  ]);
-
-  yScale.domain([
-    (yExtent[0] ?? 1.5) - 0.5,
-    (yExtent[1] ?? 6.0) + 0.5
-  ]);
-
-  rScaleOPS.domain(opsExtent);
-  rScaleFIP.domain(fipExtent);
-
-  const xAxis = d3.axisBottom(xScale).ticks(8);
-  const yAxis = d3.axisLeft(yScale).ticks(8);
-
-  xAxisGroup.call(xAxis);
-  yAxisGroup.call(yAxis);
-
-  const xGrid = d3
-    .axisBottom(xScale)
-    .tickSize(-height)
-    .tickFormat("");
-  const yGrid = d3
-    .axisLeft(yScale)
-    .tickSize(-width)
-    .tickFormat("");
-
-  xGridGroup.call(xGrid);
-  yGridGroup.call(yGrid);
-
-  const uniqueTeams = Array.from(
-    new Set(fullData.map((d) => d.teamID))
-  ).sort();
-
-  const legendItem = legendGroup
-    .selectAll(".legend-item")
-    .data(uniqueTeams.slice(0, 10))
-    .enter()
-    .append("g")
-    .attr("class", "legend-item")
-    .attr("transform", (d, i) => `translate(0, ${i * 18})`);
-
-  legendItem
-    .append("rect")
-    .attr("class", "legend-rect")
-    .attr("x", 0)
-    .attr("y", -10)
-    .attr("width", 12)
-    .attr("height", 12)
-    .attr("fill", (d) => getTeamColor(d));
-
-  legendItem
-    .append("text")
-    .attr("x", 18)
-    .attr("y", 0)
-    .attr("dominant-baseline", "middle")
-    .text((d) => d);
-
-  updateChart();
-
-  yearSlider.addEventListener("input", () => {
-    const y = +yearSlider.value;
-    yearLabel.textContent = `Year: ${y} (use "All years" to reset)`;
-    updateChart();
+  const teamsList=Array.from(new Set(fullData.map(d=>d.teamID))).sort();
+  buildLegend(teamsList);
+  teamsList.forEach(t=>{
+    const opt=document.createElement("option");
+    opt.value=t;
+    opt.textContent=t;
+    teamSelect.appendChild(opt);
   });
 
-  yearResetBtn.addEventListener("click", () => {
-    yearLabel.textContent = "All years";
-    updateChart(true);
-  });
-
-  viewOpsBtn.addEventListener("click", () => {
-    currentView = "ops";
-    viewOpsBtn.classList.add("active");
-    viewFipBtn.classList.remove("active");
-    chartTitle.text("OPS vs FIP (bubble size = OPS)");
-    updateChart(false);
-  });
-
-  viewFipBtn.addEventListener("click", () => {
-    currentView = "fip";
-    viewFipBtn.classList.add("active");
-    viewOpsBtn.classList.remove("active");
-    chartTitle.text("OPS vs FIP (bubble size = FIP)");
-    updateChart(false);
-  });
+  drawOPS();
 });
 
-function updateChart(forceAllYears = false) {
-  const sliderYear = +yearSlider.value;
-
-  filteredData = fullData.filter((d) => {
-    const yearMatch = forceAllYears ? true : d.yearID === sliderYear;
-    return yearMatch;
+function filteredData(){
+  return fullData.filter(d=>{
+    const yearOk=useAllYears||d.yearID===+yearSlider.value;
+    const teamOk=currentTeam==="all"||d.teamID===currentTeam;
+    return yearOk&&teamOk;
   });
-
-  const circles = g
-    .selectAll("circle.bubble")
-    .data(
-      filteredData,
-      (d) => `${d.playerID}-${d.yearID}-${d.teamID}`
-    );
-
-  circles
-    .exit()
-    .transition()
-    .duration(300)
-    .attr("r", 0)
-    .remove();
-
-  circles
-    .transition()
-    .duration(300)
-    .attr("cx", (d) => xScale(d.OPS))
-    .attr("cy", (d) => yScale(d.FIP))
-    .attr("r", (d) =>
-      currentView === "ops"
-        ? rScaleOPS(d.OPS)
-        : rScaleFIP(d.FIP)
-    )
-    .attr("fill", (d) => getTeamColor(d.teamID))
-    .attr("opacity", 0.8);
-
-  circles
-    .enter()
-    .append("circle")
-    .attr("class", "bubble")
-    .attr("cx", (d) => xScale(d.OPS))
-    .attr("cy", (d) => yScale(d.FIP))
-    .attr("r", 0)
-    .attr("fill", (d) => getTeamColor(d.teamID))
-    .attr("opacity", 0.8)
-    .on("mouseenter", handleMouseEnter)
-    .on("mousemove", handleMouseMove)
-    .on("mouseleave", handleMouseLeave)
-    .transition()
-    .duration(300)
-    .attr("r", (d) =>
-      currentView === "ops"
-        ? rScaleOPS(d.OPS)
-        : rScaleFIP(d.FIP)
-    );
 }
 
-function handleMouseEnter(event, d) {
+function drawOPS(){
+  clearChart();
+  const data=filteredData();
+  const svg=d3.select("#chart-container").append("svg")
+    .attr("width",960).attr("height",600);
+  const g=svg.append("g").attr("transform","translate(70,40)");
+  const x=d3.scaleLinear().range([0,820])
+    .domain(d3.extent(fullData,d=>d.OPS));
+  const y=d3.scaleLinear().range([500,0])
+    .domain(d3.extent(fullData,d=>d.FIP));
+  const r=d3.scaleSqrt().range([3,22])
+    .domain(d3.extent(fullData,d=>d.OPS));
+  const xAxis=g.append("g").attr("transform","translate(0,500)")
+    .attr("class","axis")
+    .call(d3.axisBottom(x));
+  const yAxis=g.append("g").attr("class","axis")
+    .call(d3.axisLeft(y));
+  g.append("text")
+    .attr("x",410).attr("y",540)
+    .attr("fill","#e5e7eb")
+    .attr("text-anchor","middle")
+    .text("OPS");
+  g.append("text")
+    .attr("transform","rotate(-90)")
+    .attr("x",-250).attr("y",-45)
+    .attr("fill","#e5e7eb")
+    .attr("text-anchor","middle")
+    .text("FIP");
+  const xGrid=d3.axisBottom(x).tickSize(-500).tickFormat("");
+  const yGrid=d3.axisLeft(y).tickSize(-820).tickFormat("");
+  g.append("g").attr("class","grid").attr("transform","translate(0,500)").call(xGrid);
+  g.append("g").attr("class","grid").call(yGrid);
+  g.append("text")
+    .attr("x",0).attr("y",-10)
+    .attr("fill","#e5e7eb")
+    .text("OPS vs FIP (bubble size = OPS)");
+  g.selectAll("circle").data(data).enter().append("circle")
+    .attr("cx",d=>x(d.OPS))
+    .attr("cy",d=>y(d.FIP))
+    .attr("r",d=>r(d.OPS))
+    .attr("fill",d=>teamColor(d.teamID))
+    .attr("opacity",.8)
+    .on("mouseenter",showTip)
+    .on("mousemove",moveTip)
+    .on("mouseleave",hideTip);
+}
+
+function drawFIP(){
+  clearChart();
+  const data=filteredData();
+  const svg=d3.select("#chart-container").append("svg")
+    .attr("width",960).attr("height",600);
+  const g=svg.append("g").attr("transform","translate(70,40)");
+  const x=d3.scaleLinear().range([0,820])
+    .domain(d3.extent(fullData,d=>d.OPS));
+  const y=d3.scaleLinear().range([500,0])
+    .domain(d3.extent(fullData,d=>d.FIP));
+  const r=d3.scaleSqrt().range([3,22])
+    .domain(d3.extent(fullData,d=>d.FIP));
+  g.append("g").attr("transform","translate(0,500)")
+    .attr("class","axis")
+    .call(d3.axisBottom(x));
+  g.append("g").attr("class","axis")
+    .call(d3.axisLeft(y));
+  g.append("text")
+    .attr("x",410).attr("y",540)
+    .attr("fill","#e5e7eb")
+    .attr("text-anchor","middle")
+    .text("OPS");
+  g.append("text")
+    .attr("transform","rotate(-90)")
+    .attr("x",-250).attr("y",-45)
+    .attr("fill","#e5e7eb")
+    .attr("text-anchor","middle")
+    .text("FIP");
+  const xGrid=d3.axisBottom(x).tickSize(-500).tickFormat("");
+  const yGrid=d3.axisLeft(y).tickSize(-820).tickFormat("");
+  g.append("g").attr("class","grid").attr("transform","translate(0,500)").call(xGrid);
+  g.append("g").attr("class","grid").call(yGrid);
+  g.append("text")
+    .attr("x",0).attr("y",-10)
+    .attr("fill","#e5e7eb")
+    .text("OPS vs FIP (bubble size = FIP)");
+  g.selectAll("circle").data(data).enter().append("circle")
+    .attr("cx",d=>x(d.OPS))
+    .attr("cy",d=>y(d.FIP))
+    .attr("r",d=>r(d.FIP))
+    .attr("fill",d=>teamColor(d.teamID))
+    .attr("opacity",.8)
+    .on("mouseenter",showTip)
+    .on("mousemove",moveTip)
+    .on("mouseleave",hideTip);
+}
+
+function showTip(e,d){
   tooltip
-    .style("opacity", 1)
-    .html(buildTooltipHTML(d));
+    .style("opacity",1)
+    .html(`<strong>${d.name}</strong><br>Year: ${d.yearID}<br>Team: ${d.teamID}<br>OPS: ${d.OPS.toFixed(3)}<br>FIP: ${d.FIP.toFixed(2)}<br>IP: ${d.IP.toFixed(1)}`);
 }
 
-function handleMouseMove(event, d) {
+function moveTip(e){
   tooltip
-    .style("left", `${event.pageX + 12}px`)
-    .style("top", `${event.pageY - 10}px`);
+    .style("left",e.pageX+12+"px")
+    .style("top",e.pageY-10+"px");
 }
 
-function handleMouseLeave() {
-  tooltip.style("opacity", 0);
+function hideTip(){
+  tooltip.style("opacity",0);
 }
 
-function buildTooltipHTML(d) {
-  const name = d.name || d.playerID;
-  return `
-    <strong>${name}</strong>
-    Year: ${d.yearID} · Team: ${d.teamID}<br/>
-    OPS: ${d.OPS.toFixed(3)}<br/>
-    FIP: ${d.FIP.toFixed(2)}<br/>
-    IP: ${d.IP.toFixed(1)}
-  `;
-}
+yearSlider.addEventListener("input",()=>{
+  useAllYears=false;
+  yearLabel.textContent=`Year: ${yearSlider.value}`;
+  currentView==="ops"?drawOPS():drawFIP();
+});
+
+yearReset.addEventListener("click",()=>{
+  useAllYears=true;
+  yearLabel.textContent="All years";
+  currentView==="ops"?drawOPS():drawFIP();
+});
+
+btnOPS.addEventListener("click",()=>{
+  currentView="ops";
+  btnOPS.classList.add("active");
+  btnFIP.classList.remove("active");
+  drawOPS();
+});
+
+btnFIP.addEventListener("click",()=>{
+  currentView="fip";
+  btnFIP.classList.add("active");
+  btnOPS.classList.remove("active");
+  drawFIP();
+});
+
+teamSelect.addEventListener("change",()=>{
+  currentTeam=teamSelect.value;
+  currentView==="ops"?drawOPS():drawFIP();
+});

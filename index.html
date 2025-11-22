@@ -2,17 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>OPS vs FIP Bubble Explorer (1950–2010)</title>
+  <title>OPS vs FIP Explorer</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <header>
     <h1>OPS vs FIP Bubble Explorer (1950–2010)</h1>
-    <p class="subtitle">
-      Each bubble is a player-season with both hitting (OPS) and pitching (FIP) stats.
-      Bubble size emphasizes either OPS or FIP depending on the selected view.
-      Colors represent teams using MLB color mapping.
-    </p>
+    <p class="subtitle">Toggle between OPS and FIP bubble charts. Colors represent teams. Filter by year and team.</p>
   </header>
 
   <section class="controls">
@@ -24,24 +20,24 @@
     </div>
 
     <div class="control-group">
-      <span>View:</span>
+      <label for="team-select">Team:</label>
+      <select id="team-select">
+        <option value="all">All teams</option>
+      </select>
+    </div>
+
+    <div class="control-group">
       <button id="view-ops" class="toggle-button active">OPS view</button>
       <button id="view-fip" class="toggle-button">FIP view</button>
     </div>
   </section>
 
   <main>
-    <div id="chart-container">
-    </div>
+    <div id="chart-container"></div>
+    <div id="legend-container"></div>
   </main>
 
-  <div id="tooltip" class="tooltip" style="opacity: 0;"></div>
-
-  <footer>
-    <p>
-      Data source: Lahman Baseball Database (Batting, Pitching, Master, Teams; filtered to 1950–2010).
-    </p>
-  </footer>
+  <div id="tooltip" class="tooltip" style="opacity:0"></div>
 
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="script.js"></script>
