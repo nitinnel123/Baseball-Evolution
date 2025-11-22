@@ -142,36 +142,37 @@ function drawOPS(){
   const svg=d3.select("#chart-container").append("svg")
     .attr("width",960).attr("height",600);
   const g=svg.append("g").attr("transform","translate(70,40)");
+
   const x=d3.scaleLinear().range([0,820])
     .domain(d3.extent(fullData,d=>d.AVG));
+
   const y=d3.scaleLinear().range([500,0])
     .domain(d3.extent(fullData,d=>d.OPS));
+
   const r=d3.scaleSqrt().range([3,22])
     .domain(d3.extent(fullData,d=>d.OPS));
-  g.append("g").attr("transform","translate(0,500)")
-    .attr("class","axis")
-    .call(d3.axisBottom(x));
-  g.append("g").attr("class","axis")
-    .call(d3.axisLeft(y));
+
+  g.append("g").attr("transform","translate(0,500)").call(d3.axisBottom(x));
+  g.append("g").call(d3.axisLeft(y));
+
   g.append("text")
     .attr("x",410).attr("y",540)
     .attr("fill","#e5e7eb")
     .attr("text-anchor","middle")
     .text("Batting Average (AVG)");
+
   g.append("text")
     .attr("transform","rotate(-90)")
     .attr("x",-250).attr("y",-45)
     .attr("fill","#e5e7eb")
     .attr("text-anchor","middle")
     .text("OPS");
-  const xGrid=d3.axisBottom(x).tickSize(-500).tickFormat("");
-  const yGrid=d3.axisLeft(y).tickSize(-820).tickFormat("");
-  g.append("g").attr("class","grid").attr("transform","translate(0,500)").call(xGrid);
-  g.append("g").attr("class","grid").call(yGrid);
+
   g.append("text")
     .attr("x",0).attr("y",-10)
     .attr("fill","#e5e7eb")
     .text("OPS vs AVG (bubble size = OPS)");
+
   g.selectAll("circle").data(data).enter().append("circle")
     .attr("cx",d=>x(d.AVG))
     .attr("cy",d=>y(d.OPS))
@@ -189,36 +190,37 @@ function drawFIP(){
   const svg=d3.select("#chart-container").append("svg")
     .attr("width",960).attr("height",600);
   const g=svg.append("g").attr("transform","translate(70,40)");
+
   const x=d3.scaleLinear().range([0,820])
     .domain(d3.extent(fullData,d=>d.K));
+
   const y=d3.scaleLinear().range([500,0])
     .domain(d3.extent(fullData,d=>d.FIP));
+
   const r=d3.scaleSqrt().range([3,22])
     .domain(d3.extent(fullData,d=>d.FIP));
-  g.append("g").attr("transform","translate(0,500)")
-    .attr("class","axis")
-    .call(d3.axisBottom(x));
-  g.append("g").attr("class","axis")
-    .call(d3.axisLeft(y));
+
+  g.append("g").attr("transform","translate(0,500)").call(d3.axisBottom(x));
+  g.append("g").call(d3.axisLeft(y));
+
   g.append("text")
     .attr("x",410).attr("y",540)
     .attr("fill","#e5e7eb")
     .attr("text-anchor","middle")
     .text("Strikeouts (K)");
+
   g.append("text")
     .attr("transform","rotate(-90)")
     .attr("x",-250).attr("y",-45)
     .attr("fill","#e5e7eb")
     .attr("text-anchor","middle")
     .text("FIP");
-  const xGrid=d3.axisBottom(x).tickSize(-500).tickFormat("");
-  const yGrid=d3.axisLeft(y).tickSize(-820).tickFormat("");
-  g.append("g").attr("class","grid").attr("transform","translate(0,500)").call(xGrid);
-  g.append("g").attr("class","grid").call(yGrid);
+
   g.append("text")
     .attr("x",0).attr("y",-10)
     .attr("fill","#e5e7eb")
     .text("FIP vs K (bubble size = FIP)");
+
   g.selectAll("circle").data(data).enter().append("circle")
     .attr("cx",d=>x(d.K))
     .attr("cy",d=>y(d.FIP))
