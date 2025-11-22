@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>OPS vs FIP Bubble Explorer (1950–2010)</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <h1>OPS vs FIP Bubble Explorer (1950–2010)</h1>
+    <p class="subtitle">
+      Each bubble is a player-season with both hitting (OPS) and pitching (FIP) stats.
+      Bubble size ≈ innings pitched (IP). Color = league.
+      All calculations are done client-side from raw Lahman CSVs.
+    </p>
+  </header>
+
+  <section class="controls">
+    <div class="control-group">
+      <label for="year-slider">Year:</label>
+      <input type="range" id="year-slider" min="1950" max="2010" step="1" />
+      <span id="year-label">All years</span>
+      <button id="year-reset">All years</button>
+    </div>
+
+    <div class="control-group">
+      <label for="league-select">League:</label>
+      <select id="league-select">
+        <option value="all">All leagues</option>
+        <option value="AL">AL</option>
+        <option value="NL">NL</option>
+      </select>
+    </div>
+  </section>
+
+  <main>
+    <div id="chart-container">
+    </div>
+  </main>
+
+  <div id="tooltip" class="tooltip" style="opacity: 0;"></div>
+
+  <footer>
+    <p>
+      Data source: Lahman Baseball Database (Batting, Pitching, Master, Teams; filtered to 1950–2010).
+    </p>
+  </footer>
+
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
