@@ -15,6 +15,7 @@ let fullData=[];
 let currentView="ops";
 let useAllYears=false;
 let currentTeam="all";
+let currentRole="all";
 
 const yearSlider=document.getElementById("year-slider");
 const yearLabel=document.getElementById("year-label");
@@ -22,6 +23,9 @@ const yearReset=document.getElementById("year-reset");
 const btnOPS=document.getElementById("view-ops");
 const btnFIP=document.getElementById("view-fip");
 const teamSelect=document.getElementById("team-select");
+const btnRoleAll=document.getElementById("role-all");
+const btnRoleStarter=document.getElementById("role-starter");
+const btnRoleReliever=document.getElementById("role-reliever");
 const tooltip=d3.select("#tooltip");
 
 function clearChart(){
@@ -48,12 +52,11 @@ Promise.all([
   d3.csv("datasets/Master.csv",d3.autoType),
   d3.csv("datasets/Teams.csv",d3.autoType)
 ]).then(([batRaw,pitRaw,master,teams])=>{
-  const bat=batRaw.filter(d=>d.yearID>=1950&&d.yearID<=2010);
-  const pit=pitRaw.filter(d=>d.yearID>=1950&&d.yearID<=2010);
+  const bat=batRaw.filter(d=>d.yearID>=1950&&d.yearID<=2010&&d.AB>=400);
+  const pit=pitRaw.filter(d=>d.yearID>=1950&&d.yearID<=2010&&(d.IPouts||0)/3>=40);
 
   const batProcessed=bat.map(d=>{
     const H=d.H||0,BB=d.BB||0,HBP=d.HBP||0,AB=d.AB||0,SF=d.SF||0,db=d["2B"]||0,tr=d["3B"]||0,HR=d.HR||0;
-    if(AB<=0)return null;
     const sng=H-db-tr-HR;
     const obpDen=AB+BB+HBP+SF;
     const OBP=obpDen>0?(H+BB+HBP)/obpDen:NaN;
@@ -68,11 +71,13 @@ Promise.all([
   const FIP_CONSTANT=3.1;
   const pitProcessed=pit.map(d=>{
     const HR=d.HR||0,BB=d.BB||0,SO=d.SO||0,HBP=d.HBP||0,IPouts=d.IPouts||0,IP=IPouts/3;
-    if(IP<=0)return null;
     const FIP_raw=(13*HR+3*(BB+HBP)-2*SO)/IP;
     const FIP=FIP_raw+FIP_CONSTANT;
+    const G=d.G||0,GS=d.GS||0;
+    let role="reliever";
+    if(G>0&&GS>=10&&GS/G>=0.4) role="starter";
     if(!Number.isFinite(FIP))return null;
-    return{playerID:d.playerID,yearID:d.yearID,FIP,IP,K:SO,teamID:d.teamID};
+    return{playerID:d.playerID,yearID:d.yearID,FIP,IP,K:SO,teamID:d.teamID,role};
   }).filter(d=>d);
 
   const batMap=new Map();
@@ -103,7 +108,8 @@ Promise.all([
       AVG:b.AVG,
       FIP:p.FIP,
       IP:p.IP,
-      K:p.K
+      K:p.K,
+      role:p.role
     });
   });
 
@@ -132,7 +138,8 @@ function filteredData(){
   return fullData.filter(d=>{
     const yearOk=useAllYears||d.yearID===+yearSlider.value;
     const teamOk=currentTeam==="all"||d.teamID===currentTeam;
-    return yearOk&&teamOk;
+    const roleOk=currentRole==="all"||d.role===currentRole;
+    return yearOk&&teamOk&&roleOk;
   });
 }
 
@@ -172,6 +179,11 @@ function drawOPS(){
     .attr("x",0).attr("y",-10)
     .attr("fill","#e5e7eb")
     .text("OPS vs AVG (bubble size = OPS)");
+
+  const xGrid=d3.axisBottom(x).tickSize(-500).tickFormat("");
+  const yGrid=d3.axisLeft(y).tickSize(-820).tickFormat("");
+  g.append("g").attr("class","grid").attr("transform","translate(0,500)").call(xGrid);
+  g.append("g").attr("class","grid").call(yGrid);
 
   g.selectAll("circle").data(data).enter().append("circle")
     .attr("cx",d=>x(d.AVG))
@@ -221,6 +233,11 @@ function drawFIP(){
     .attr("fill","#e5e7eb")
     .text("FIP vs K (bubble size = FIP)");
 
+  const xGrid=d3.axisBottom(x).tickSize(-500).tickFormat("");
+  const yGrid=d3.axisLeft(y).tickSize(-820).tickFormat("");
+  g.append("g").attr("class","grid").attr("transform","translate(0,500)").call(xGrid);
+  g.append("g").attr("class","grid").call(yGrid);
+
   g.selectAll("circle").data(data).enter().append("circle")
     .attr("cx",d=>x(d.K))
     .attr("cy",d=>y(d.FIP))
@@ -235,13 +252,13 @@ function drawFIP(){
 function showTipOPS(e,d){
   tooltip
     .style("opacity",1)
-    .html(`<strong>${d.name}</strong><br>Year: ${d.yearID}<br>Team: ${d.teamID}<br>AVG: ${d.AVG.toFixed(3)}<br>OPS: ${d.OPS.toFixed(3)}<br>IP: ${d.IP.toFixed(1)}`);
+    .html(`<strong>${d.name}</strong><br>Year: ${d.yearID}<br>Team: ${d.teamID}<br>AVG: ${d.AVG.toFixed(3)}<br>OPS: ${d.OPS.toFixed(3)}<br>IP: ${d.IP.toFixed(1)}<br>Role: ${d.role}`);
 }
 
 function showTipFIP(e,d){
   tooltip
     .style("opacity",1)
-    .html(`<strong>${d.name}</strong><br>Year: ${d.yearID}<br>Team: ${d.teamID}<br>K: ${d.K}<br>FIP: ${d.FIP.toFixed(2)}<br>IP: ${d.IP.toFixed(1)}`);
+    .html(`<strong>${d.name}</strong><br>Year: ${d.yearID}<br>Team: ${d.teamID}<br>K: ${d.K}<br>FIP: ${d.FIP.toFixed(2)}<br>IP: ${d.IP.toFixed(1)}<br>Role: ${d.role}`);
 }
 
 function moveTip(e){
@@ -282,5 +299,29 @@ btnFIP.addEventListener("click",()=>{
 
 teamSelect.addEventListener("change",()=>{
   currentTeam=teamSelect.value;
+  currentView==="ops"?drawOPS():drawFIP();
+});
+
+btnRoleAll.addEventListener("click",()=>{
+  currentRole="all";
+  btnRoleAll.classList.add("active");
+  btnRoleStarter.classList.remove("active");
+  btnRoleReliever.classList.remove("active");
+  currentView==="ops"?drawOPS():drawFIP();
+});
+
+btnRoleStarter.addEventListener("click",()=>{
+  currentRole="starter";
+  btnRoleStarter.classList.add("active");
+  btnRoleAll.classList.remove("active");
+  btnRoleReliever.classList.remove("active");
+  currentView==="ops"?drawOPS():drawFIP();
+});
+
+btnRoleReliever.addEventListener("click",()=>{
+  currentRole="reliever";
+  btnRoleReliever.classList.add("active");
+  btnRoleAll.classList.remove("active");
+  btnRoleStarter.classList.remove("active");
   currentView==="ops"?drawOPS():drawFIP();
 });

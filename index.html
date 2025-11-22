@@ -8,7 +8,7 @@
 <body>
   <header>
     <h1>OPS & FIP Bubble Explorer (1950–2010)</h1>
-    <p class="subtitle">OPS vs AVG for hitters, FIP vs K for pitchers. Colors represent teams. Filter by year and team.</p>
+    <p class="subtitle">OPS vs AVG for hitters, FIP vs K for pitchers. Colors represent teams. Filter by year, team, and pitcher role.</p>
   </header>
 
   <section class="controls">
@@ -24,6 +24,13 @@
       <select id="team-select">
         <option value="all">All teams</option>
       </select>
+    </div>
+
+    <div class="control-group">
+      <span>Pitcher role:</span>
+      <button id="role-all" class="toggle-button active">All</button>
+      <button id="role-starter" class="toggle-button">Starters</button>
+      <button id="role-reliever" class="toggle-button">Relievers</button>
     </div>
 
     <div class="control-group">
