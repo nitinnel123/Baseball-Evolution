@@ -346,3 +346,48 @@ btnRoleReliever.addEventListener("click",()=>{
   btnRoleStarter.classList.remove("active");
   currentView==="ops"?drawOPS():drawFIP();
 });
+
+let selectedCircle=null;
+
+function selectPlayer(d, element){
+  if(selectedCircle){
+    selectedCircle.classList.remove("selected");
+  }
+  selectedCircle=element;
+  selectedCircle.classList.add("selected");
+
+  const panel=document.getElementById("player-panel");
+  const content=document.getElementById("panel-content");
+
+  if(currentView==="ops"){
+    content.textContent=
+      `${d.name}
+Year: ${d.yearID}
+Team: ${d.teamID}
+AB: ${d.AB}
+AVG: ${d.AVG.toFixed(3)}
+HR: ${d.HR}
+OPS: ${d.OPS.toFixed(3)}`;
+  } else {
+    content.textContent=
+      `${d.name}
+Year: ${d.yearID}
+Team: ${d.teamID}
+Role: ${d.role}
+IP: ${d.IP.toFixed(1)}
+K: ${d.K}
+ERA: ${d.ERA.toFixed(2)}
+FIP: ${d.FIP.toFixed(2)}`;
+  }
+
+  panel.classList.remove("hidden");
+}
+
+document.getElementById("panel-close").addEventListener("click",()=>{
+  const panel=document.getElementById("player-panel");
+  panel.classList.add("hidden");
+  if(selectedCircle){
+    selectedCircle.classList.remove("selected");
+    selectedCircle=null;
+  }
+});
