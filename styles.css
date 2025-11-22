@@ -123,15 +123,6 @@ select:focus {
   display: none;
 }
 
-#panel-close {
-  font-size: 20px;
-  line-height: 1;
-  text-align: right;
-  cursor: pointer;
-  color: #9ca3af;
-  margin-bottom: 0.5rem;
-}
-
 #panel-content {
   white-space: pre-line;
   color: #e5e7eb;
@@ -158,6 +149,7 @@ select:focus {
 .axis line {
   stroke: #4b5563;
 }
+
 
 .grid line {
   stroke: #1e293b;

@@ -64,7 +64,7 @@ Promise.all([
     nameMap.set(m.playerID,n);
   });
 
-  const bat=batRaw.filter(d=>d.yearID>=1950&&d.yearID<=2010&&d.AB>=400);
+  const bat=batRaw.filter(d=>d.yearID>=1970&&d.yearID<=2015&&d.AB>=400);
   battingData=bat.map(d=>{
     const H=d.H||0;
     const BB=d.BB||0;
@@ -97,7 +97,7 @@ Promise.all([
     };
   }).filter(d=>d);
 
-  const pit=pitRaw.filter(d=>d.yearID>=1950&&d.yearID<=2010&&(d.IPouts||0)/3>=40);
+  const pit=pitRaw.filter(d=>d.yearID>=1970&&d.yearID<=2015&&(d.IPouts||0)/3>=40);
   const FIP_CONSTANT=3.1;
   pitchingData=pit.map(d=>{
     const HR=d.HR||0;
@@ -132,10 +132,10 @@ Promise.all([
 
   const allYears=[...battingData.map(d=>d.yearID),...pitchingData.map(d=>d.yearID)];
   const years=d3.extent(allYears);
-  yearSlider.min=years[0];
-  yearSlider.max=years[1];
-  yearSlider.value=years[0];
-  yearLabel.textContent=`Year: ${years[0]}`;
+  yearSlider.min=1970;
+  yearSlider.max=2015;
+  yearSlider.value=1970;
+  yearLabel.textContent=`Year: 1970`;
   useAllYears=false;
 
   const allTeams=new Set();
@@ -316,7 +316,7 @@ function selectPlayer(d,element){
   const content=document.getElementById("panel-content");
   if(currentView==="ops"){
     content.textContent=
-      `${d.name}
+`${d.name}
 Year: ${d.yearID}
 Team: ${d.teamID}
 AB: ${d.AB}
@@ -325,7 +325,7 @@ HR: ${d.HR}
 OPS: ${d.OPS.toFixed(3)}`;
   }else{
     content.textContent=
-      `${d.name}
+`${d.name}
 Year: ${d.yearID}
 Team: ${d.teamID}
 Role: ${d.role}
@@ -336,14 +336,6 @@ FIP: ${d.FIP.toFixed(2)}`;
   }
   panel.classList.remove("hidden");
 }
-
-document.getElementById("panel-close").addEventListener("click",()=>{
-  document.getElementById("player-panel").classList.add("hidden");
-  if(selectedCircle){
-    selectedCircle.classList.remove("selected");
-    selectedCircle=null;
-  }
-});
 
 yearSlider.addEventListener("input",()=>{
   useAllYears=false;
