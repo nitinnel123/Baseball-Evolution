@@ -60,7 +60,14 @@ Promise.all([
 
   const bat=batRaw.filter(d=>d.yearID>=1950&&d.yearID<=2010&&d.AB>=400);
   battingData=bat.map(d=>{
-    const H=d.H||0,BB=d.BB||0,HBP=d.HBP||0,AB=d.AB||0,SF=d.SF||0,db=d["2B"]||0,tr=d["3B"]||0,HR=d.HR||0;
+    const H=d.H||0;
+    const BB=d.BB||0;
+    const HBP=d.HBP||0;
+    const AB=d.AB||0;
+    const SF=d.SF||0;
+    const db=d["2B"]||0;
+    const tr=d["3B"]||0;
+    const HR=d.HR||0;
     if(AB<=0)return null;
     const sng=H-db-tr-HR;
     const obpDen=AB+BB+HBP+SF;
@@ -76,21 +83,31 @@ Promise.all([
       name,
       yearID:d.yearID,
       teamID:d.teamID,
-      AB:AB,
-      OPS,
-      AVG
+      AB,
+      H,
+      HR,
+      AVG,
+      OPS
     };
   }).filter(d=>d);
 
   const pit=pitRaw.filter(d=>d.yearID>=1950&&d.yearID<=2010&&(d.IPouts||0)/3>=40);
   const FIP_CONSTANT=3.1;
   pitchingData=pit.map(d=>{
-    const HR=d.HR||0,BB=d.BB||0,SO=d.SO||0,HBP=d.HBP||0,IPouts=d.IPouts||0,IP=IPouts/3;
+    const HR=d.HR||0;
+    const BB=d.BB||0;
+    const SO=d.SO||0;
+    const HBP=d.HBP||0;
+    const IPouts=d.IPouts||0;
+    const IP=IPouts/3;
+    const ER=d.ER||0;
     if(IP<=0)return null;
     const FIP_raw=(13*HR+3*(BB+HBP)-2*SO)/IP;
     const FIP=FIP_raw+FIP_CONSTANT;
-    if(!Number.isFinite(FIP))return null;
-    const G=d.G||0,GS=d.GS||0;
+    const ERA=9*ER/IP;
+    if(!Number.isFinite(FIP)||!Number.isFinite(ERA))return null;
+    const G=d.G||0;
+    const GS=d.GS||0;
     let role="reliever";
     if(G>0&&GS>=10&&GS/G>=0.4) role="starter";
     const name=nameMap.get(d.playerID)||d.playerID;
@@ -102,6 +119,7 @@ Promise.all([
       IP,
       K:SO,
       FIP,
+      ERA,
       role
     };
   }).filter(d=>d);
@@ -157,7 +175,7 @@ function drawOPS(){
     .domain(d3.extent(battingData,d=>d.AVG));
 
   const y=d3.scaleLinear().range([500,0])
-    .domain(d3.extent(battingData,d=>d.OPS));
+    .domain(d3.extent(battingData,d=>d.HR));
 
   const r=d3.scaleSqrt().range([3,22])
     .domain(d3.extent(battingData,d=>d.OPS));
@@ -176,12 +194,12 @@ function drawOPS(){
     .attr("x",-250).attr("y",-45)
     .attr("fill","#e5e7eb")
     .attr("text-anchor","middle")
-    .text("OPS");
+    .text("Home Runs (HR)");
 
   g.append("text")
     .attr("x",0).attr("y",-10)
     .attr("fill","#e5e7eb")
-    .text("OPS vs AVG (bubble size = OPS)");
+    .text("AVG vs HR (bubble size = OPS)");
 
   const xGrid=d3.axisBottom(x).tickSize(-500).tickFormat("");
   const yGrid=d3.axisLeft(y).tickSize(-820).tickFormat("");
@@ -190,7 +208,7 @@ function drawOPS(){
 
   g.selectAll("circle").data(data).enter().append("circle")
     .attr("cx",d=>x(d.AVG))
-    .attr("cy",d=>y(d.OPS))
+    .attr("cy",d=>y(d.HR))
     .attr("r",d=>r(d.OPS))
     .attr("fill",d=>teamColor(d.teamID))
     .attr("opacity",.8)
@@ -210,7 +228,7 @@ function drawFIP(){
     .domain(d3.extent(pitchingData,d=>d.K));
 
   const y=d3.scaleLinear().range([500,0])
-    .domain(d3.extent(pitchingData,d=>d.FIP));
+    .domain(d3.extent(pitchingData,d=>d.ERA));
 
   const r=d3.scaleSqrt().range([3,22])
     .domain(d3.extent(pitchingData,d=>d.FIP));
@@ -229,12 +247,12 @@ function drawFIP(){
     .attr("x",-250).attr("y",-45)
     .attr("fill","#e5e7eb")
     .attr("text-anchor","middle")
-    .text("FIP");
+    .text("ERA");
 
   g.append("text")
     .attr("x",0).attr("y",-10)
     .attr("fill","#e5e7eb")
-    .text("FIP vs K (bubble size = FIP)");
+    .text("K vs ERA (bubble size = FIP)");
 
   const xGrid=d3.axisBottom(x).tickSize(-500).tickFormat("");
   const yGrid=d3.axisLeft(y).tickSize(-820).tickFormat("");
@@ -243,7 +261,7 @@ function drawFIP(){
 
   g.selectAll("circle").data(data).enter().append("circle")
     .attr("cx",d=>x(d.K))
-    .attr("cy",d=>y(d.FIP))
+    .attr("cy",d=>y(d.ERA))
     .attr("r",d=>r(d.FIP))
     .attr("fill",d=>teamColor(d.teamID))
     .attr("opacity",.8)
@@ -255,13 +273,13 @@ function drawFIP(){
 function showTipOPS(e,d){
   tooltip
     .style("opacity",1)
-    .html(`<strong>${d.name}</strong><br>Year: ${d.yearID}<br>Team: ${d.teamID}<br>AB: ${d.AB}<br>AVG: ${d.AVG.toFixed(3)}<br>OPS: ${d.OPS.toFixed(3)}`);
+    .html(`<strong>${d.name}</strong><br>Year: ${d.yearID}<br>Team: ${d.teamID}<br>AB: ${d.AB}<br>AVG: ${d.AVG.toFixed(3)}<br>HR: ${d.HR}<br>OPS: ${d.OPS.toFixed(3)}`);
 }
 
 function showTipFIP(e,d){
   tooltip
     .style("opacity",1)
-    .html(`<strong>${d.name}</strong><br>Year: ${d.yearID}<br>Team: ${d.teamID}<br>Role: ${d.role}<br>IP: ${d.IP.toFixed(1)}<br>K: ${d.K}<br>FIP: ${d.FIP.toFixed(2)}`);
+    .html(`<strong>${d.name}</strong><br>Year: ${d.yearID}<br>Team: ${d.teamID}<br>Role: ${d.role}<br>IP: ${d.IP.toFixed(1)}<br>K: ${d.K}<br>ERA: ${d.ERA.toFixed(2)}<br>FIP: ${d.FIP.toFixed(2)}`);
 }
 
 function moveTip(e){
