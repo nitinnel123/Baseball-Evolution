@@ -27,10 +27,6 @@ label {
   font-weight: 500;
 }
 
-#year-slider {
-  width: 180px;
-}
-
 .pill,
 .toggle-button {
   border-radius: 999px;
@@ -65,6 +61,7 @@ select {
 #era-controls {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.5rem;
   padding: 0.5rem 1.5rem 0.25rem;
   background: #020617;
@@ -96,22 +93,44 @@ select {
 
 #main-layout {
   display: flex;
-  padding: 0.5rem 1.5rem 1.5rem;
+  padding: 0.75rem 1.5rem 1.5rem;
   gap: 1rem;
 }
 
-#chart-area {
+#left-column {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.chart-row {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.panel {
+  background: #020617;
+  border-radius: 1rem;
+  padding: 0.75rem;
+  border: 1px solid #111827;
+  flex: 1;
+}
+
+#scatter-panel {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-#chart-container {
-  background: #020617;
-  border-radius: 1rem;
-  padding: 0.75rem;
-  border: 1px solid #111827;
+#scatter-title {
+  font-size: 0.85rem;
+  color: #9ca3af;
+}
+
+#scatter-container {
+  width: 100%;
+  height: 420px;
 }
 
 #legend-container {
@@ -133,13 +152,6 @@ select {
   height: 10px;
   border-radius: 999px;
   border: 1px solid #020617;
-}
-
-#trend-container {
-  background: #020617;
-  border-radius: 1rem;
-  padding: 0.75rem;
-  border: 1px solid #111827;
 }
 
 #player-panel {

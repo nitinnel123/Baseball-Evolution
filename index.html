@@ -3,21 +3,13 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>MLB Dashboard</title>
+<title>MLB Evolution Dashboard</title>
 <link rel="stylesheet" href="styles.css" />
 <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
 <body>
 
 <div id="controls">
-
-  <div class="control-group">
-    <label>Year:</label>
-    <input type="range" id="year-slider" min="1970" max="2015" value="1970">
-    <span id="year-label">Year: 1970</span>
-    <button id="year-reset" class="pill">All years</button>
-  </div>
-
   <div class="control-group">
     <label>Team:</label>
     <select id="team-select">
@@ -33,10 +25,9 @@
   </div>
 
   <div class="control-group">
-    <button id="view-ops" class="toggle-button active">AVG vs HR</button>
-    <button id="view-fip" class="toggle-button">K vs ERA</button>
+    <button id="view-ops" class="toggle-button active">Hitting: AVG vs HR</button>
+    <button id="view-fip" class="toggle-button">Pitching: K vs ERA</button>
   </div>
-
 </div>
 
 <div id="era-controls">
@@ -48,10 +39,20 @@
 </div>
 
 <div id="main-layout">
-  <div id="chart-area">
-    <div id="chart-container"></div>
-    <div id="legend-container"></div>
-    <div id="trend-container"></div>
+  <div id="left-column">
+    <div class="chart-row">
+      <div id="chart-runs" class="panel"></div>
+      <div id="chart-tto" class="panel"></div>
+    </div>
+    <div class="chart-row">
+      <div id="chart-ops" class="panel"></div>
+      <div id="chart-era-fip" class="panel"></div>
+    </div>
+    <div id="scatter-panel" class="panel">
+      <div id="scatter-title"></div>
+      <div id="scatter-container"></div>
+      <div id="legend-container"></div>
+    </div>
   </div>
 
   <div id="player-panel" class="hidden">
@@ -66,18 +67,18 @@
 
   <p>
     <strong>1. What have you done so far?</strong><br>
-    I have built an interactive MLB performance dashboard that visualizes both hitting and pitching data from 1970 to 2015. 
-    For hitters, the chart shows AVG vs HR with OPS determining bubble size, allowing users to compare power and contact efficiency simultaneously. 
-    For pitchers, the chart displays K vs ERA with FIP as bubble size, giving insight into strikeout ability and run prevention. 
-    The interface includes filters for year, team, pitcher role, and era, along with hover tooltips and a click-to-view player panel summarizing key statistics. 
+    I have built an interactive MLB performance dashboard that visualizes how hitting and pitching have evolved from 1970 to 2015. 
+    The top charts focus on league-level trends such as runs per game, the rise of the three true outcomes (strikeouts, walks, and home runs), overall hitting quality via OPS, and pitching quality via ERA and FIP. 
+    Era bands highlight the Expansion Era, Steroid Era, and Modern Era to contextualize changes in the run environment and strategy. 
+    The bottom scatterplot then allows detailed exploration of individual player seasons, with separate views for hitters (AVG vs HR with OPS as bubble size) and pitchers (K vs ERA with FIP as bubble size).
   </p>
 
   <p>
     <strong>2. What will be the most challenging part of your project to design, and why?</strong><br>
-    The most challenging component will likely be managing visual clarity as more layers of interaction and filtering are added. 
-    Baseball datasets contain large numbers of players per season, so avoiding overplotting while keeping all bubbles interpretable can be difficult. 
-    Ensuring the panel, legend, tooltips, and controls remain readable and well-aligned across various screen sizes also adds complexity. 
-    Balancing historical storytelling, statistical accuracy, and visual simplicity while still presenting meaningful comparisons is the core design challenge.
+    The most challenging component will be balancing statistical depth with visual clarity while telling a coherent historical story. 
+    League-wide time series, era bands, and player-level scatterplots can easily become overwhelming if too many encodings compete for attention. 
+    Carefully choosing metrics like runs per game, OPS, FIP, and three true outcomes rates is critical so that each chart contributes a distinct piece of the narrative. 
+    The main difficulty is ensuring that users can connect macro trends (such as the Steroid Era power spike or the modern strikeout boom) with micro examples at the player level without getting lost in the complexity.
   </p>
 </div>
 

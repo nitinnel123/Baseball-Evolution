@@ -21,19 +21,19 @@ const eraList=[eras.expansion,eras.steroid,eras.modern];
 
 let battingData=[];
 let pitchingData=[];
+let runsSeries=[];
+let ttoSeries=[];
+let opsSeries=[];
+let pitchSeries=[];
 let currentView="ops";
-let useAllYears=false;
 let currentTeam="all";
 let currentRole="all";
 let currentEra="all";
 let selectedCircle=null;
 
-const yearSlider=document.getElementById("year-slider");
-const yearLabel=document.getElementById("year-label");
-const yearReset=document.getElementById("year-reset");
+const teamSelect=document.getElementById("team-select");
 const btnOPS=document.getElementById("view-ops");
 const btnFIP=document.getElementById("view-fip");
-const teamSelect=document.getElementById("team-select");
 const btnRoleAll=document.getElementById("role-all");
 const btnRoleStarter=document.getElementById("role-starter");
 const btnRoleReliever=document.getElementById("role-reliever");
@@ -42,21 +42,13 @@ const btnEraAll=document.getElementById("era-all");
 const btnEraExpansion=document.getElementById("era-expansion");
 const btnEraSteroid=document.getElementById("era-steroid");
 const btnEraModern=document.getElementById("era-modern");
+const scatterTitle=document.getElementById("scatter-title");
 const tooltip=d3.select("#tooltip");
 
-function clearChart(){
-  d3.select("#chart-container").selectAll("*").remove();
-  d3.select("#trend-container").selectAll("*").remove();
-  if(selectedCircle){
-    selectedCircle.classList.remove("selected");
-    selectedCircle=null;
-  }
-  document.getElementById("player-panel").classList.add("hidden");
-}
-
-function buildLegend(teams){
+function buildLegendFromData(data){
   const c=d3.select("#legend-container");
   c.selectAll("*").remove();
+  const teams=Array.from(new Set(data.map(d=>d.teamID))).sort();
   const items=c.selectAll(".legend-item")
     .data(teams)
     .enter()
@@ -66,6 +58,21 @@ function buildLegend(teams){
     .attr("class","legend-swatch")
     .style("background-color",d=>teamColor(d));
   items.append("span").text(d=>d);
+}
+
+function clearScatter(){
+  d3.select("#scatter-container").selectAll("*").remove();
+  d3.select("#legend-container").selectAll("*").remove();
+  if(selectedCircle){
+    selectedCircle.classList.remove("selected");
+    selectedCircle=null;
+  }
+  document.getElementById("player-panel").classList.add("hidden");
+}
+
+function inCurrentEra(year){
+  const e=eras[currentEra];
+  return year>=e.start&&year<=e.end;
 }
 
 Promise.all([
@@ -79,8 +86,8 @@ Promise.all([
     nameMap.set(m.playerID,n);
   });
 
-  const bat=batRaw.filter(d=>d.yearID>=1970&&d.yearID<=2015&&d.AB>=400);
-  battingData=bat.map(d=>{
+  const batScatter=batRaw.filter(d=>d.yearID>=1970&&d.yearID<=2015&&d.AB>=400);
+  battingData=batScatter.map(d=>{
     const H=d.H||0;
     const BB=d.BB||0;
     const HBP=d.HBP||0;
@@ -112,9 +119,9 @@ Promise.all([
     };
   }).filter(d=>d);
 
-  const pit=pitRaw.filter(d=>d.yearID>=1970&&d.yearID<=2015&&(d.IPouts||0)/3>=40);
+  const pitScatter=pitRaw.filter(d=>d.yearID>=1970&&d.yearID<=2015&&(d.IPouts||0)/3>=40);
   const FIP_CONSTANT=3.1;
-  pitchingData=pit.map(d=>{
+  pitchingData=pitScatter.map(d=>{
     const HR=d.HR||0;
     const BB=d.BB||0;
     const SO=d.SO||0;
@@ -145,11 +152,102 @@ Promise.all([
     };
   }).filter(d=>d);
 
+  const yearMin=1970;
+  const yearMax=2015;
+
+  const batYearMap=new Map();
+  batRaw.forEach(d=>{
+    if(d.yearID<yearMin||d.yearID>yearMax)return;
+    const y=d.yearID;
+    if(!batYearMap.has(y)){
+      batYearMap.set(y,{
+        AB:0,H:0,R:0,BB:0,SO:0,HBP:0,SF:0,DBL:0,TRP:0,HR:0
+      });
+    }
+    const agg=batYearMap.get(y);
+    agg.AB+=(d.AB||0);
+    agg.H+=(d.H||0);
+    agg.R+=(d.R||0);
+    agg.BB+=(d.BB||0);
+    agg.SO+=(d.SO||0);
+    agg.HBP+=(d.HBP||0);
+    agg.SF+=(d.SF||0);
+    agg.DBL+=(d["2B"]||0);
+    agg.TRP+=(d["3B"]||0);
+    agg.HR+=(d.HR||0);
+  });
+
+  const pitYearMap=new Map();
+  pitRaw.forEach(d=>{
+    if(d.yearID<yearMin||d.yearID>yearMax)return;
+    const y=d.yearID;
+    if(!pitYearMap.has(y)){
+      pitYearMap.set(y,{IPouts:0,SO:0,BB:0,HBP:0,HR:0,ER:0});
+    }
+    const agg=pitYearMap.get(y);
+    agg.IPouts+=(d.IPouts||0);
+    agg.SO+=(d.SO||0);
+    agg.BB+=(d.BB||0);
+    agg.HBP+=(d.HBP||0);
+    agg.HR+=(d.HR||0);
+    agg.ER+=(d.ER||0);
+  });
+
+  const FIP_CONST=3.1;
+  for(let y=yearMin;y<=yearMax;y++){
+    const bat=batYearMap.get(y);
+    const pit=pitYearMap.get(y);
+    if(!bat||!pit)continue;
+
+    const AB=bat.AB;
+    const H=bat.H;
+    const R=bat.R;
+    const BB=bat.BB;
+    const SO=bat.SO;
+    const HBP=bat.HBP;
+    const SF=bat.SF;
+    const DBL=bat.DBL;
+    const TRP=bat.TRP;
+    const HR=bat.HR;
+
+    const PA=AB+BB+HBP+SF;
+    const IPouts=pit.IPouts;
+    const IP=IPouts/3;
+    const ER=pit.ER;
+    const pSO=pit.SO;
+    const pBB=pit.BB;
+    const pHBP=pit.HBP;
+    const pHR=pit.HR;
+
+    if(PA>0&&IP>0){
+      const games=IPouts/27;
+      const rpg=games>0?R/games:NaN;
+      runsSeries.push({year:y,rg:rpg});
+
+      const kPct=SO/PA;
+      const bbPct=BB/PA;
+      const hrPct=HR/PA;
+      ttoSeries.push({year:y,kPct,bbPct,hrPct});
+
+      const sng=H-DBL-TRP-HR;
+      const TB=(sng>0?sng:0)+2*DBL+3*TRP+4*HR;
+      const SLG=AB>0?TB/AB:NaN;
+      const obpDen=AB+BB+HBP+SF;
+      const OBP=obpDen>0?(H+BB+HBP)/obpDen:NaN;
+      const OPS=OBP+SLG;
+      opsSeries.push({year:y,ops:OPS});
+
+      const ERA=9*ER/IP;
+      const FIP_raw=(13*pHR+3*(pBB+pHBP)-2*pSO)/IP;
+      const FIP=FIP_raw+FIP_CONST;
+      pitchSeries.push({year:y,era:ERA,fip:FIP});
+    }
+  }
+
   const allTeams=new Set();
   battingData.forEach(d=>allTeams.add(d.teamID));
   pitchingData.forEach(d=>allTeams.add(d.teamID));
   const teamsList=Array.from(allTeams).sort();
-  buildLegend(teamsList);
   teamsList.forEach(t=>{
     const opt=document.createElement("option");
     opt.value=t;
@@ -157,81 +255,332 @@ Promise.all([
     teamSelect.appendChild(opt);
   });
 
-  drawOPS();
+  drawRunsChart();
+  drawTTOChart();
+  drawOpsChart();
+  drawEraFipChart();
+  drawScatterOPS();
 });
 
-function inCurrentEra(year){
-  const e=currentEra==="all"?eras.all:eras[currentEra];
-  return year>=e.start&&year<=e.end;
-}
-
-function filteredBatting(){
-  return battingData.filter(d=>{
-    const inEra=inCurrentEra(d.yearID);
-    const yearOk=useAllYears||d.yearID===+yearSlider.value;
-    const teamOk=currentTeam==="all"||d.teamID===currentTeam;
-    return inEra&&yearOk&&teamOk;
-  });
-}
-
-function filteredPitching(){
-  return pitchingData.filter(d=>{
-    const inEra=inCurrentEra(d.yearID);
-    const yearOk=useAllYears||d.yearID===+yearSlider.value;
-    const teamOk=currentTeam==="all"||d.teamID===currentTeam;
-    const roleOk=currentRole==="all"||d.role===currentRole;
-    return inEra&&yearOk&&teamOk&&roleOk;
-  });
-}
-
-function drawOPS(){
-  clearChart();
-  roleGroup.style.display="none";
-
-  const data=filteredBatting();
-  const svg=d3.select("#chart-container").append("svg")
-    .attr("width",960).attr("height",600);
-
-  const margin={top:40,right:20,bottom:70,left:70};
-  const innerWidth=960-margin.left-margin.right;
-  const innerHeight=600-margin.top-margin.bottom;
-
+function drawRunsChart(){
+  d3.select("#chart-runs").selectAll("*").remove();
+  const data=runsSeries;
+  const svg=d3.select("#chart-runs").append("svg")
+    .attr("width","100%")
+    .attr("height",240);
+  const width=svg.node().getBoundingClientRect().width;
+  const height=240;
+  const margin={top:30,right:20,bottom:40,left:60};
+  const innerWidth=width-margin.left-margin.right;
+  const innerHeight=height-margin.top-margin.bottom;
   const g=svg.append("g").attr("transform",`translate(${margin.left},${margin.top})`);
 
-  const x=d3.scaleLinear().range([0,innerWidth])
-    .domain(d3.extent(battingData.filter(d=>inCurrentEra(d.yearID)),d=>d.AVG));
+  const x=d3.scaleLinear().range([0,innerWidth]).domain([1970,2015]);
+  const y=d3.scaleLinear().range([innerHeight,0]).domain(d3.extent(data,d=>d.rg));
 
-  const y=d3.scaleLinear().range([innerHeight,0])
-    .domain([0,d3.max(battingData.filter(d=>inCurrentEra(d.yearID)),d=>d.HR)]);
+  eraList.forEach(e=>{
+    g.append("rect")
+      .attr("x",x(e.start))
+      .attr("y",0)
+      .attr("width",x(e.end)-x(e.start))
+      .attr("height",innerHeight)
+      .attr("fill",e.key==="expansion"?"rgba(59,130,246,0.10)":e.key==="steroid"?"rgba(239,68,68,0.10)":"rgba(34,197,94,0.10)");
+  });
 
-  const r=d3.scaleSqrt().range([3,22])
-    .domain(d3.extent(battingData.filter(d=>inCurrentEra(d.yearID)),d=>d.OPS));
+  g.append("path")
+    .datum(data)
+    .attr("fill","none")
+    .attr("stroke","#38bdf8")
+    .attr("stroke-width",2)
+    .attr("d",d3.line().x(d=>x(d.year)).y(d=>y(d.rg)));
 
-  g.append("g").attr("transform",`translate(0,${innerHeight})`).attr("class","axis").call(d3.axisBottom(x));
+  g.append("g").attr("class","axis").attr("transform",`translate(0,${innerHeight})`).call(d3.axisBottom(x).tickFormat(d3.format("d")));
   g.append("g").attr("class","axis").call(d3.axisLeft(y));
 
   g.append("text")
-    .attr("x",innerWidth/2).attr("y",innerHeight+45)
+    .attr("x",0)
+    .attr("y",-10)
+    .attr("fill","#e5e7eb")
+    .text("League runs per team-game");
+
+  g.append("text")
+    .attr("x",innerWidth/2)
+    .attr("y",innerHeight+30)
+    .attr("fill","#e5e7eb")
+    .attr("text-anchor","middle")
+    .text("Year");
+
+  g.append("text")
+    .attr("transform","rotate(-90)")
+    .attr("x",-innerHeight/2)
+    .attr("y",-45)
+    .attr("fill","#e5e7eb")
+    .attr("text-anchor","middle")
+    .text("Runs per game");
+}
+
+function drawTTOChart(){
+  d3.select("#chart-tto").selectAll("*").remove();
+  const data=ttoSeries;
+  const svg=d3.select("#chart-tto").append("svg")
+    .attr("width","100%")
+    .attr("height",240);
+  const width=svg.node().getBoundingClientRect().width;
+  const height=240;
+  const margin={top:30,right:20,bottom:40,left:60};
+  const innerWidth=width-margin.left-margin.right;
+  const innerHeight=height-margin.top-margin.bottom;
+  const g=svg.append("g").attr("transform",`translate(${margin.left},${margin.top})`);
+
+  const x=d3.scaleLinear().range([0,innerWidth]).domain([1970,2015]);
+  const maxVal=d3.max(data,d=>Math.max(d.kPct,d.bbPct,d.hrPct));
+  const y=d3.scaleLinear().range([innerHeight,0]).domain([0,maxVal]);
+
+  eraList.forEach(e=>{
+    g.append("rect")
+      .attr("x",x(e.start))
+      .attr("y",0)
+      .attr("width",x(e.end)-x(e.start))
+      .attr("height",innerHeight)
+      .attr("fill",e.key==="expansion"?"rgba(59,130,246,0.10)":e.key==="steroid"?"rgba(239,68,68,0.10)":"rgba(34,197,94,0.10)");
+  });
+
+  const lineK=d3.line().x(d=>x(d.year)).y(d=>y(d.kPct));
+  const lineBB=d3.line().x(d=>x(d.year)).y(d=>y(d.bbPct));
+  const lineHR=d3.line().x(d=>x(d.year)).y(d=>y(d.hrPct));
+
+  g.append("path").datum(data).attr("fill","none").attr("stroke","#f97316").attr("stroke-width",2).attr("d",lineK);
+  g.append("path").datum(data).attr("fill","none").attr("stroke","#22c55e").attr("stroke-width",2).attr("d",lineBB);
+  g.append("path").datum(data).attr("fill","none").attr("stroke","#e11d48").attr("stroke-width",2).attr("d",lineHR);
+
+  g.append("g").attr("class","axis").attr("transform",`translate(0,${innerHeight})`).call(d3.axisBottom(x).tickFormat(d3.format("d")));
+  g.append("g").attr("class","axis").call(d3.axisLeft(y).tickFormat(d3.format(".0%")));
+
+  g.append("text")
+    .attr("x",0)
+    .attr("y",-10)
+    .attr("fill","#e5e7eb")
+    .text("League three true outcomes rates");
+
+  g.append("text")
+    .attr("x",innerWidth/2)
+    .attr("y",innerHeight+30)
+    .attr("fill","#e5e7eb")
+    .attr("text-anchor","middle")
+    .text("Year");
+
+  g.append("text")
+    .attr("transform","rotate(-90)")
+    .attr("x",-innerHeight/2)
+    .attr("y",-45)
+    .attr("fill","#e5e7eb")
+    .attr("text-anchor","middle")
+    .text("Rate of PA");
+
+  const legend=g.append("g").attr("transform",`translate(${innerWidth-140},0)`);
+  const items=[
+    {label:"K%",color:"#f97316"},
+    {label:"BB%",color:"#22c55e"},
+    {label:"HR%",color:"#e11d48"}
+  ];
+  items.forEach((d,i)=>{
+    const gItem=legend.append("g").attr("transform",`translate(0,${i*18})`);
+    gItem.append("rect").attr("width",10).attr("height",10).attr("fill",d.color);
+    gItem.append("text").attr("x",16).attr("y",9).attr("fill","#e5e7eb").attr("font-size","0.75rem").text(d.label);
+  });
+}
+
+function drawOpsChart(){
+  d3.select("#chart-ops").selectAll("*").remove();
+  const data=opsSeries;
+  const svg=d3.select("#chart-ops").append("svg")
+    .attr("width","100%")
+    .attr("height",240);
+  const width=svg.node().getBoundingClientRect().width;
+  const height=240;
+  const margin={top:30,right:20,bottom:40,left:60};
+  const innerWidth=width-margin.left-margin.right;
+  const innerHeight=height-margin.top-margin.bottom;
+  const g=svg.append("g").attr("transform",`translate(${margin.left},${margin.top})`);
+
+  const x=d3.scaleLinear().range([0,innerWidth]).domain([1970,2015]);
+  const y=d3.scaleLinear().range([innerHeight,0]).domain(d3.extent(data,d=>d.ops));
+
+  eraList.forEach(e=>{
+    g.append("rect")
+      .attr("x",x(e.start))
+      .attr("y",0)
+      .attr("width",x(e.end)-x(e.start))
+      .attr("height",innerHeight)
+      .attr("fill",e.key==="expansion"?"rgba(59,130,246,0.10)":e.key==="steroid"?"rgba(239,68,68,0.10)":"rgba(34,197,94,0.10)");
+  });
+
+  g.append("path")
+    .datum(data)
+    .attr("fill","none")
+    .attr("stroke","#22c55e")
+    .attr("stroke-width",2)
+    .attr("d",d3.line().x(d=>x(d.year)).y(d=>y(d.ops)));
+
+  g.append("g").attr("class","axis").attr("transform",`translate(0,${innerHeight})`).call(d3.axisBottom(x).tickFormat(d3.format("d")));
+  g.append("g").attr("class","axis").call(d3.axisLeft(y));
+
+  g.append("text")
+    .attr("x",0)
+    .attr("y",-10)
+    .attr("fill","#e5e7eb")
+    .text("League OPS over time");
+
+  g.append("text")
+    .attr("x",innerWidth/2)
+    .attr("y",innerHeight+30)
+    .attr("fill","#e5e7eb")
+    .attr("text-anchor","middle")
+    .text("Year");
+
+  g.append("text")
+    .attr("transform","rotate(-90)")
+    .attr("x",-innerHeight/2)
+    .attr("y",-45)
+    .attr("fill","#e5e7eb")
+    .attr("text-anchor","middle")
+    .text("OPS");
+}
+
+function drawEraFipChart(){
+  d3.select("#chart-era-fip").selectAll("*").remove();
+  const data=pitchSeries;
+  const svg=d3.select("#chart-era-fip").append("svg")
+    .attr("width","100%")
+    .attr("height",240);
+  const width=svg.node().getBoundingClientRect().width;
+  const height=240;
+  const margin={top:30,right:20,bottom:40,left:60};
+  const innerWidth=width-margin.left-margin.right;
+  const innerHeight=height-margin.top-margin.bottom;
+  const g=svg.append("g").attr("transform",`translate(${margin.left},${margin.top})`);
+
+  const x=d3.scaleLinear().range([0,innerWidth]).domain([1970,2015]);
+  const minY=d3.min(data,d=>Math.min(d.era,d.fip));
+  const maxY=d3.max(data,d=>Math.max(d.era,d.fip));
+  const y=d3.scaleLinear().range([innerHeight,0]).domain([minY,maxY]);
+
+  eraList.forEach(e=>{
+    g.append("rect")
+      .attr("x",x(e.start))
+      .attr("y",0)
+      .attr("width",x(e.end)-x(e.start))
+      .attr("height",innerHeight)
+      .attr("fill",e.key==="expansion"?"rgba(59,130,246,0.10)":e.key==="steroid"?"rgba(239,68,68,0.10)":"rgba(34,197,94,0.10)");
+  });
+
+  const lineERA=d3.line().x(d=>x(d.year)).y(d=>y(d.era));
+  const lineFIP=d3.line().x(d=>x(d.year)).y(d=>y(d.fip));
+
+  g.append("path").datum(data).attr("fill","none").attr("stroke","#60a5fa").attr("stroke-width",2).attr("d",lineERA);
+  g.append("path").datum(data).attr("fill","none").attr("stroke","#f97316").attr("stroke-width",2).attr("d",lineFIP);
+
+  g.append("g").attr("class","axis").attr("transform",`translate(0,${innerHeight})`).call(d3.axisBottom(x).tickFormat(d3.format("d")));
+  g.append("g").attr("class","axis").call(d3.axisLeft(y));
+
+  g.append("text")
+    .attr("x",0)
+    .attr("y",-10)
+    .attr("fill","#e5e7eb")
+    .text("League ERA and FIP over time");
+
+  g.append("text")
+    .attr("x",innerWidth/2)
+    .attr("y",innerHeight+30)
+    .attr("fill","#e5e7eb")
+    .attr("text-anchor","middle")
+    .text("Year");
+
+  g.append("text")
+    .attr("transform","rotate(-90)")
+    .attr("x",-innerHeight/2)
+    .attr("y",-45)
+    .attr("fill","#e5e7eb")
+    .attr("text-anchor","middle")
+    .text("Runs allowed per 9");
+
+  const legend=g.append("g").attr("transform",`translate(${innerWidth-140},0)`);
+  const items=[
+    {label:"ERA",color:"#60a5fa"},
+    {label:"FIP",color:"#f97316"}
+  ];
+  items.forEach((d,i)=>{
+    const gItem=legend.append("g").attr("transform",`translate(0,${i*18})`);
+    gItem.append("rect").attr("width",10).attr("height",10).attr("fill",d.color);
+    gItem.append("text").attr("x",16).attr("y",9).attr("fill","#e5e7eb").attr("font-size","0.75rem").text(d.label);
+  });
+}
+
+function filteredBattingScatter(){
+  return battingData.filter(d=>{
+    const inEra=inCurrentEra(d.yearID);
+    const teamOk=currentTeam==="all"||d.teamID===currentTeam;
+    return inEra&&teamOk;
+  });
+}
+
+function filteredPitchingScatter(){
+  return pitchingData.filter(d=>{
+    const inEra=inCurrentEra(d.yearID);
+    const teamOk=currentTeam==="all"||d.teamID===currentTeam;
+    const roleOk=currentRole==="all"||d.role===currentRole;
+    return inEra&&teamOk&&roleOk;
+  });
+}
+
+function drawScatterOPS(){
+  clearScatter();
+  scatterTitle.textContent="Hitting view: AVG vs HR (bubble size = OPS)";
+  const data=filteredBattingScatter();
+  const svg=d3.select("#scatter-container").append("svg")
+    .attr("width","100%")
+    .attr("height","100%");
+  const bbox=svg.node().getBoundingClientRect();
+  const width=bbox.width;
+  const height=bbox.height;
+  const margin={top:30,right:20,bottom:60,left:70};
+  const innerWidth=width-margin.left-margin.right;
+  const innerHeight=height-margin.top-margin.bottom;
+  const g=svg.append("g").attr("transform",`translate(${margin.left},${margin.top})`);
+
+  const domainData=battingData.filter(d=>inCurrentEra(d.yearID));
+  const x=d3.scaleLinear().range([0,innerWidth]).domain(d3.extent(domainData,d=>d.AVG));
+  const y=d3.scaleLinear().range([innerHeight,0]).domain([0,d3.max(domainData,d=>d.HR)]);
+  const r=d3.scaleSqrt().range([3,22]).domain(d3.extent(domainData,d=>d.OPS));
+
+  const xGrid=d3.axisBottom(x).tickSize(-innerHeight).tickFormat("");
+  const yGrid=d3.axisLeft(y).tickSize(-innerWidth).tickFormat("");
+  g.append("g").attr("class","grid").attr("transform",`translate(0,${innerHeight})`).call(xGrid);
+  g.append("g").attr("class","grid").call(yGrid);
+
+  g.append("g").attr("class","axis").attr("transform",`translate(0,${innerHeight})`).call(d3.axisBottom(x));
+  g.append("g").attr("class","axis").call(d3.axisLeft(y));
+
+  g.append("text")
+    .attr("x",innerWidth/2)
+    .attr("y",innerHeight+45)
     .attr("fill","#e5e7eb")
     .attr("text-anchor","middle")
     .text("Batting Average (AVG)");
 
   g.append("text")
     .attr("transform","rotate(-90)")
-    .attr("x",-innerHeight/2).attr("y",-45)
+    .attr("x",-innerHeight/2)
+    .attr("y",-45)
     .attr("fill","#e5e7eb")
     .attr("text-anchor","middle")
     .text("Home Runs (HR)");
 
   g.append("text")
-    .attr("x",0).attr("y",-10)
+    .attr("x",0)
+    .attr("y",-10)
     .attr("fill","#e5e7eb")
-    .text("AVG vs HR (bubble size = OPS)");
-
-  const xGrid=d3.axisBottom(x).tickSize(-innerHeight).tickFormat("");
-  const yGrid=d3.axisLeft(y).tickSize(-innerWidth).tickFormat("");
-  g.append("g").attr("class","grid").attr("transform",`translate(0,${innerHeight})`).call(xGrid);
-  g.append("g").attr("class","grid").call(yGrid);
+    .text("Player seasons within selected era");
 
   g.selectAll("circle").data(data).enter().append("circle")
     .attr("cx",d=>x(d.AVG))
@@ -244,57 +593,57 @@ function drawOPS(){
     .on("mouseleave",hideTip)
     .on("click",function(e,d){selectPlayer(d,this);});
 
-  drawTrendBatting();
+  buildLegendFromData(data);
 }
 
-function drawFIP(){
-  clearChart();
-  roleGroup.style.display="flex";
-
-  const data=filteredPitching();
-  const svg=d3.select("#chart-container").append("svg")
-    .attr("width",960).attr("height",600);
-
-  const margin={top:40,right:20,bottom:70,left:70};
-  const innerWidth=960-margin.left-margin.right;
-  const innerHeight=600-margin.top-margin.bottom;
-
+function drawScatterFIP(){
+  clearScatter();
+  scatterTitle.textContent="Pitching view: K vs ERA (bubble size = FIP)";
+  const data=filteredPitchingScatter();
+  const svg=d3.select("#scatter-container").append("svg")
+    .attr("width","100%")
+    .attr("height","100%");
+  const bbox=svg.node().getBoundingClientRect();
+  const width=bbox.width;
+  const height=bbox.height;
+  const margin={top:30,right:20,bottom:60,left:70};
+  const innerWidth=width-margin.left-margin.right;
+  const innerHeight=height-margin.top-margin.bottom;
   const g=svg.append("g").attr("transform",`translate(${margin.left},${margin.top})`);
 
-  const x=d3.scaleLinear().range([0,innerWidth])
-    .domain([0,d3.max(pitchingData.filter(d=>inCurrentEra(d.yearID)),d=>d.K)]);
+  const domainData=pitchingData.filter(d=>inCurrentEra(d.yearID));
+  const x=d3.scaleLinear().range([0,innerWidth]).domain([0,d3.max(domainData,d=>d.K)]);
+  const y=d3.scaleLinear().range([innerHeight,0]).domain([0,d3.max(domainData,d=>d.ERA)]);
+  const r=d3.scaleSqrt().range([3,22]).domain(d3.extent(domainData,d=>d.FIP));
 
-  const y=d3.scaleLinear().range([innerHeight,0])
-    .domain([0,d3.max(pitchingData.filter(d=>inCurrentEra(d.yearID)),d=>d.ERA)]);
+  const xGrid=d3.axisBottom(x).tickSize(-innerHeight).tickFormat("");
+  const yGrid=d3.axisLeft(y).tickSize(-innerWidth).tickFormat("");
+  g.append("g").attr("class","grid").attr("transform",`translate(0,${innerHeight})`).call(xGrid);
+  g.append("g").attr("class","grid").call(yGrid);
 
-  const r=d3.scaleSqrt().range([3,22])
-    .domain(d3.extent(pitchingData.filter(d=>inCurrentEra(d.yearID)),d=>d.FIP));
-
-  g.append("g").attr("transform",`translate(0,${innerHeight})`).attr("class","axis").call(d3.axisBottom(x));
+  g.append("g").attr("class","axis").attr("transform",`translate(0,${innerHeight})`).call(d3.axisBottom(x));
   g.append("g").attr("class","axis").call(d3.axisLeft(y));
 
   g.append("text")
-    .attr("x",innerWidth/2).attr("y",innerHeight+45)
+    .attr("x",innerWidth/2)
+    .attr("y",innerHeight+45)
     .attr("fill","#e5e7eb")
     .attr("text-anchor","middle")
     .text("Strikeouts (K)");
 
   g.append("text")
     .attr("transform","rotate(-90)")
-    .attr("x",-innerHeight/2).attr("y",-45)
+    .attr("x",-innerHeight/2)
+    .attr("y",-45)
     .attr("fill","#e5e7eb")
     .attr("text-anchor","middle")
     .text("ERA");
 
   g.append("text")
-    .attr("x",0).attr("y",-10)
+    .attr("x",0)
+    .attr("y",-10)
     .attr("fill","#e5e7eb")
-    .text("K vs ERA (bubble size = FIP)");
-
-  const xGrid=d3.axisBottom(x).tickSize(-innerHeight).tickFormat("");
-  const yGrid=d3.axisLeft(y).tickSize(-innerWidth).tickFormat("");
-  g.append("g").attr("class","grid").attr("transform",`translate(0,${innerHeight})`).call(xGrid);
-  g.append("g").attr("class","grid").call(yGrid);
+    .text("Pitcher seasons within selected era");
 
   g.selectAll("circle").data(data).enter().append("circle")
     .attr("cx",d=>x(d.K))
@@ -307,142 +656,7 @@ function drawFIP(){
     .on("mouseleave",hideTip)
     .on("click",function(e,d){selectPlayer(d,this);});
 
-  drawTrendPitching();
-}
-
-function drawTrendBatting(){
-  const era=currentEra==="all"?eras.all:eras[currentEra];
-  const data=battingData.filter(d=>{
-    const inEra=d.yearID>=era.start&&d.yearID<=era.end;
-    const teamOk=currentTeam==="all"||d.teamID===currentTeam;
-    return inEra&&teamOk;
-  });
-  if(!data.length)return;
-
-  const byYear=d3.rollup(data,v=>d3.mean(v,d=>d.OPS),d=>d.yearID);
-  const years=Array.from(byYear.keys()).sort((a,b)=>a-b);
-  const series=years.map(y=>({year:y,value:byYear.get(y)}));
-
-  const svg=d3.select("#trend-container").append("svg")
-    .attr("width",960).attr("height",220);
-
-  const margin={top:30,right:20,bottom:40,left:60};
-  const innerWidth=960-margin.left-margin.right;
-  const innerHeight=220-margin.top-margin.bottom;
-
-  const g=svg.append("g").attr("transform",`translate(${margin.left},${margin.top})`);
-
-  const x=d3.scaleLinear().range([0,innerWidth]).domain([1970,2015]);
-  const y=d3.scaleLinear().range([innerHeight,0])
-    .domain(d3.extent(series,d=>d.value));
-
-  eraList.forEach(e=>{
-    g.append("rect")
-      .attr("x",x(e.start))
-      .attr("y",0)
-      .attr("width",x(e.end)-x(e.start))
-      .attr("height",innerHeight)
-      .attr("fill",e.key==="expansion"?"rgba(59,130,246,0.10)":e.key==="steroid"?"rgba(239,68,68,0.10)":"rgba(34,197,94,0.10)");
-  });
-
-  g.append("path")
-    .datum(series)
-    .attr("fill","none")
-    .attr("stroke","#38bdf8")
-    .attr("stroke-width",2)
-    .attr("d",d3.line().x(d=>x(d.year)).y(d=>y(d.value)));
-
-  g.append("g").attr("class","axis").attr("transform",`translate(0,${innerHeight})`).call(d3.axisBottom(x).tickFormat(d3.format("d")));
-  g.append("g").attr("class","axis").call(d3.axisLeft(y));
-
-  g.append("text")
-    .attr("x",0)
-    .attr("y",-10)
-    .attr("fill","#e5e7eb")
-    .text("Average OPS over time");
-
-  g.append("text")
-    .attr("x",innerWidth/2)
-    .attr("y",innerHeight+30)
-    .attr("fill","#e5e7eb")
-    .attr("text-anchor","middle")
-    .text("Year");
-
-  g.append("text")
-    .attr("transform","rotate(-90)")
-    .attr("x",-innerHeight/2)
-    .attr("y",-45)
-    .attr("fill","#e5e7eb")
-    .attr("text-anchor","middle")
-    .text("Average OPS");
-}
-
-function drawTrendPitching(){
-  const era=currentEra==="all"?eras.all:eras[currentEra];
-  const data=pitchingData.filter(d=>{
-    const inEra=d.yearID>=era.start&&d.yearID<=era.end;
-    const teamOk=currentTeam==="all"||d.teamID===currentTeam;
-    const roleOk=currentRole==="all"||d.role===currentRole;
-    return inEra&&teamOk&&roleOk;
-  });
-  if(!data.length)return;
-
-  const byYear=d3.rollup(data,v=>d3.mean(v,d=>d.FIP),d=>d.yearID);
-  const years=Array.from(byYear.keys()).sort((a,b)=>a-b);
-  const series=years.map(y=>({year:y,value:byYear.get(y)}));
-
-  const svg=d3.select("#trend-container").append("svg")
-    .attr("width",960).attr("height",220);
-
-  const margin={top:30,right:20,bottom:40,left:60};
-  const innerWidth=960-margin.left-margin.right;
-  const innerHeight=220-margin.top-margin.bottom;
-
-  const g=svg.append("g").attr("transform",`translate(${margin.left},${margin.top})`);
-
-  const x=d3.scaleLinear().range([0,innerWidth]).domain([1970,2015]);
-  const y=d3.scaleLinear().range([innerHeight,0])
-    .domain(d3.extent(series,d=>d.value));
-
-  eraList.forEach(e=>{
-    g.append("rect")
-      .attr("x",x(e.start))
-      .attr("y",0)
-      .attr("width",x(e.end)-x(e.start))
-      .attr("height",innerHeight)
-      .attr("fill",e.key==="expansion"?"rgba(59,130,246,0.10)":e.key==="steroid"?"rgba(239,68,68,0.10)":"rgba(34,197,94,0.10)");
-  });
-
-  g.append("path")
-    .datum(series)
-    .attr("fill","none")
-    .attr("stroke","#f97316")
-    .attr("stroke-width",2)
-    .attr("d",d3.line().x(d=>x(d.year)).y(d=>y(d.value)));
-
-  g.append("g").attr("class","axis").attr("transform",`translate(0,${innerHeight})`).call(d3.axisBottom(x).tickFormat(d3.format("d")));
-  g.append("g").attr("class","axis").call(d3.axisLeft(y));
-
-  g.append("text")
-    .attr("x",0)
-    .attr("y",-10)
-    .attr("fill","#e5e7eb")
-    .text("Average FIP over time");
-
-  g.append("text")
-    .attr("x",innerWidth/2)
-    .attr("y",innerHeight+30)
-    .attr("fill","#e5e7eb")
-    .attr("text-anchor","middle")
-    .text("Year");
-
-  g.append("text")
-    .attr("transform","rotate(-90)")
-    .attr("x",-innerHeight/2)
-    .attr("y",-45)
-    .attr("fill","#e5e7eb")
-    .attr("text-anchor","middle")
-    .text("Average FIP");
+  buildLegendFromData(data);
 }
 
 function showTipOPS(e,d){
@@ -501,40 +715,30 @@ FIP: ${d.FIP.toFixed(2)}`;
   panel.classList.remove("hidden");
 }
 
-function setEraButtons(activeId){
+function setEraButtons(activeBtn){
   [btnEraAll,btnEraExpansion,btnEraSteroid,btnEraModern].forEach(b=>b.classList.remove("era-active"));
-  activeId.classList.add("era-active");
+  activeBtn.classList.add("era-active");
 }
-
-yearSlider.addEventListener("input",()=>{
-  useAllYears=false;
-  yearLabel.textContent=`Year: ${yearSlider.value}`;
-  currentView==="ops"?drawOPS():drawFIP();
-});
-
-yearReset.addEventListener("click",()=>{
-  useAllYears=true;
-  yearLabel.textContent="All years";
-  currentView==="ops"?drawOPS():drawFIP();
-});
 
 btnOPS.addEventListener("click",()=>{
   currentView="ops";
   btnOPS.classList.add("active");
   btnFIP.classList.remove("active");
-  drawOPS();
+  roleGroup.style.display="none";
+  drawScatterOPS();
 });
 
 btnFIP.addEventListener("click",()=>{
   currentView="fip";
   btnFIP.classList.add("active");
   btnOPS.classList.remove("active");
-  drawFIP();
+  roleGroup.style.display="flex";
+  drawScatterFIP();
 });
 
 teamSelect.addEventListener("change",()=>{
   currentTeam=teamSelect.value;
-  currentView==="ops"?drawOPS():drawFIP();
+  currentView==="ops"?drawScatterOPS():drawScatterFIP();
 });
 
 btnRoleAll.addEventListener("click",()=>{
@@ -542,7 +746,7 @@ btnRoleAll.addEventListener("click",()=>{
   btnRoleAll.classList.add("active");
   btnRoleStarter.classList.remove("active");
   btnRoleReliever.classList.remove("active");
-  drawFIP();
+  if(currentView==="fip")drawScatterFIP();
 });
 
 btnRoleStarter.addEventListener("click",()=>{
@@ -550,7 +754,7 @@ btnRoleStarter.addEventListener("click",()=>{
   btnRoleStarter.classList.add("active");
   btnRoleAll.classList.remove("active");
   btnRoleReliever.classList.remove("active");
-  drawFIP();
+  if(currentView==="fip")drawScatterFIP();
 });
 
 btnRoleReliever.addEventListener("click",()=>{
@@ -558,29 +762,29 @@ btnRoleReliever.addEventListener("click",()=>{
   btnRoleReliever.classList.add("active");
   btnRoleAll.classList.remove("active");
   btnRoleStarter.classList.remove("active");
-  drawFIP();
+  if(currentView==="fip")drawScatterFIP();
 });
 
 btnEraAll.addEventListener("click",()=>{
   currentEra="all";
   setEraButtons(btnEraAll);
-  currentView==="ops"?drawOPS():drawFIP();
+  currentView==="ops"?drawScatterOPS():drawScatterFIP();
 });
 
 btnEraExpansion.addEventListener("click",()=>{
   currentEra="expansion";
   setEraButtons(btnEraExpansion);
-  currentView==="ops"?drawOPS():drawFIP();
+  currentView==="ops"?drawScatterOPS():drawScatterFIP();
 });
 
 btnEraSteroid.addEventListener("click",()=>{
   currentEra="steroid";
   setEraButtons(btnEraSteroid);
-  currentView==="ops"?drawOPS():drawFIP();
+  currentView==="ops"?drawScatterOPS():drawScatterFIP();
 });
 
 btnEraModern.addEventListener("click",()=>{
   currentEra="modern";
   setEraButtons(btnEraModern);
-  currentView==="ops"?drawOPS():drawFIP();
+  currentView==="ops"?drawScatterOPS():drawScatterFIP();
 });
