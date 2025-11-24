@@ -39,10 +39,19 @@
 
 </div>
 
+<div id="era-controls">
+  <span class="era-label">Era:</span>
+  <button id="era-all" class="era-button era-active">All Eras (1970–2015)</button>
+  <button id="era-expansion" class="era-button">Expansion Era (1970–1992)</button>
+  <button id="era-steroid" class="era-button">Steroid Era (1993–2004)</button>
+  <button id="era-modern" class="era-button">Modern Era (2005–2015)</button>
+</div>
+
 <div id="main-layout">
   <div id="chart-area">
     <div id="chart-container"></div>
     <div id="legend-container"></div>
+    <div id="trend-container"></div>
   </div>
 
   <div id="player-panel" class="hidden">
@@ -56,17 +65,19 @@
   <h2>Project Writeup</h2>
 
   <p>
-    We have built an interactive MLB performance dashboard that visualizes both hitting and pitching data from 1970 to 2015. 
+    <strong>1. What have you done so far?</strong><br>
+    I have built an interactive MLB performance dashboard that visualizes both hitting and pitching data from 1970 to 2015. 
     For hitters, the chart shows AVG vs HR with OPS determining bubble size, allowing users to compare power and contact efficiency simultaneously. 
     For pitchers, the chart displays K vs ERA with FIP as bubble size, giving insight into strikeout ability and run prevention. 
-    The interface includes filters for year, team, and pitcher role, along with hover tooltips and a click-to-view player panel summarizing key statistics. 
+    The interface includes filters for year, team, pitcher role, and era, along with hover tooltips and a click-to-view player panel summarizing key statistics. 
   </p>
 
   <p>
+    <strong>2. What will be the most challenging part of your project to design, and why?</strong><br>
     The most challenging component will likely be managing visual clarity as more layers of interaction and filtering are added. 
     Baseball datasets contain large numbers of players per season, so avoiding overplotting while keeping all bubbles interpretable can be difficult. 
     Ensuring the panel, legend, tooltips, and controls remain readable and well-aligned across various screen sizes also adds complexity. 
-    Balancing accuracy, performance, and visual simplicity while still presenting meaningful comparisons is the core design challenge.
+    Balancing historical storytelling, statistical accuracy, and visual simplicity while still presenting meaningful comparisons is the core design challenge.
   </p>
 </div>
 

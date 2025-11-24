@@ -11,12 +11,21 @@ WAS:"#AB0003",WSN:"#AB0003",BRO:"#005A9C",BSN:"#CE1141",MLN:"#CE1141",SEP:"#5555
 const fallback=d3.scaleOrdinal(d3.schemeTableau10);
 function teamColor(id){return teamColors[id]||fallback(id);}
 
+const eras={
+  all:{key:"all",label:"All Eras",start:1970,end:2015},
+  expansion:{key:"expansion",label:"Expansion Era",start:1970,end:1992},
+  steroid:{key:"steroid",label:"Steroid Era",start:1993,end:2004},
+  modern:{key:"modern",label:"Modern Era",start:2005,end:2015}
+};
+const eraList=[eras.expansion,eras.steroid,eras.modern];
+
 let battingData=[];
 let pitchingData=[];
 let currentView="ops";
 let useAllYears=false;
 let currentTeam="all";
 let currentRole="all";
+let currentEra="all";
 let selectedCircle=null;
 
 const yearSlider=document.getElementById("year-slider");
@@ -29,10 +38,15 @@ const btnRoleAll=document.getElementById("role-all");
 const btnRoleStarter=document.getElementById("role-starter");
 const btnRoleReliever=document.getElementById("role-reliever");
 const roleGroup=document.getElementById("role-group");
+const btnEraAll=document.getElementById("era-all");
+const btnEraExpansion=document.getElementById("era-expansion");
+const btnEraSteroid=document.getElementById("era-steroid");
+const btnEraModern=document.getElementById("era-modern");
 const tooltip=d3.select("#tooltip");
 
 function clearChart(){
   d3.select("#chart-container").selectAll("*").remove();
+  d3.select("#trend-container").selectAll("*").remove();
   if(selectedCircle){
     selectedCircle.classList.remove("selected");
     selectedCircle=null;
@@ -146,20 +160,27 @@ Promise.all([
   drawOPS();
 });
 
+function inCurrentEra(year){
+  const e=currentEra==="all"?eras.all:eras[currentEra];
+  return year>=e.start&&year<=e.end;
+}
+
 function filteredBatting(){
   return battingData.filter(d=>{
+    const inEra=inCurrentEra(d.yearID);
     const yearOk=useAllYears||d.yearID===+yearSlider.value;
     const teamOk=currentTeam==="all"||d.teamID===currentTeam;
-    return yearOk&&teamOk;
+    return inEra&&yearOk&&teamOk;
   });
 }
 
 function filteredPitching(){
   return pitchingData.filter(d=>{
+    const inEra=inCurrentEra(d.yearID);
     const yearOk=useAllYears||d.yearID===+yearSlider.value;
     const teamOk=currentTeam==="all"||d.teamID===currentTeam;
     const roleOk=currentRole==="all"||d.role===currentRole;
-    return yearOk&&teamOk&&roleOk;
+    return inEra&&yearOk&&teamOk&&roleOk;
   });
 }
 
@@ -178,13 +199,13 @@ function drawOPS(){
   const g=svg.append("g").attr("transform",`translate(${margin.left},${margin.top})`);
 
   const x=d3.scaleLinear().range([0,innerWidth])
-    .domain(d3.extent(battingData,d=>d.AVG));
+    .domain(d3.extent(battingData.filter(d=>inCurrentEra(d.yearID)),d=>d.AVG));
 
   const y=d3.scaleLinear().range([innerHeight,0])
-    .domain([0,d3.max(battingData,d=>d.HR)]);
+    .domain([0,d3.max(battingData.filter(d=>inCurrentEra(d.yearID)),d=>d.HR)]);
 
   const r=d3.scaleSqrt().range([3,22])
-    .domain(d3.extent(battingData,d=>d.OPS));
+    .domain(d3.extent(battingData.filter(d=>inCurrentEra(d.yearID)),d=>d.OPS));
 
   g.append("g").attr("transform",`translate(0,${innerHeight})`).attr("class","axis").call(d3.axisBottom(x));
   g.append("g").attr("class","axis").call(d3.axisLeft(y));
@@ -222,6 +243,8 @@ function drawOPS(){
     .on("mousemove",moveTip)
     .on("mouseleave",hideTip)
     .on("click",function(e,d){selectPlayer(d,this);});
+
+  drawTrendBatting();
 }
 
 function drawFIP(){
@@ -239,13 +262,13 @@ function drawFIP(){
   const g=svg.append("g").attr("transform",`translate(${margin.left},${margin.top})`);
 
   const x=d3.scaleLinear().range([0,innerWidth])
-    .domain([0,d3.max(pitchingData,d=>d.K)]);
+    .domain([0,d3.max(pitchingData.filter(d=>inCurrentEra(d.yearID)),d=>d.K)]);
 
   const y=d3.scaleLinear().range([innerHeight,0])
-    .domain([0,d3.max(pitchingData,d=>d.ERA)]);
+    .domain([0,d3.max(pitchingData.filter(d=>inCurrentEra(d.yearID)),d=>d.ERA)]);
 
   const r=d3.scaleSqrt().range([3,22])
-    .domain(d3.extent(pitchingData,d=>d.FIP));
+    .domain(d3.extent(pitchingData.filter(d=>inCurrentEra(d.yearID)),d=>d.FIP));
 
   g.append("g").attr("transform",`translate(0,${innerHeight})`).attr("class","axis").call(d3.axisBottom(x));
   g.append("g").attr("class","axis").call(d3.axisLeft(y));
@@ -283,6 +306,143 @@ function drawFIP(){
     .on("mousemove",moveTip)
     .on("mouseleave",hideTip)
     .on("click",function(e,d){selectPlayer(d,this);});
+
+  drawTrendPitching();
+}
+
+function drawTrendBatting(){
+  const era=currentEra==="all"?eras.all:eras[currentEra];
+  const data=battingData.filter(d=>{
+    const inEra=d.yearID>=era.start&&d.yearID<=era.end;
+    const teamOk=currentTeam==="all"||d.teamID===currentTeam;
+    return inEra&&teamOk;
+  });
+  if(!data.length)return;
+
+  const byYear=d3.rollup(data,v=>d3.mean(v,d=>d.OPS),d=>d.yearID);
+  const years=Array.from(byYear.keys()).sort((a,b)=>a-b);
+  const series=years.map(y=>({year:y,value:byYear.get(y)}));
+
+  const svg=d3.select("#trend-container").append("svg")
+    .attr("width",960).attr("height",220);
+
+  const margin={top:30,right:20,bottom:40,left:60};
+  const innerWidth=960-margin.left-margin.right;
+  const innerHeight=220-margin.top-margin.bottom;
+
+  const g=svg.append("g").attr("transform",`translate(${margin.left},${margin.top})`);
+
+  const x=d3.scaleLinear().range([0,innerWidth]).domain([1970,2015]);
+  const y=d3.scaleLinear().range([innerHeight,0])
+    .domain(d3.extent(series,d=>d.value));
+
+  eraList.forEach(e=>{
+    g.append("rect")
+      .attr("x",x(e.start))
+      .attr("y",0)
+      .attr("width",x(e.end)-x(e.start))
+      .attr("height",innerHeight)
+      .attr("fill",e.key==="expansion"?"rgba(59,130,246,0.10)":e.key==="steroid"?"rgba(239,68,68,0.10)":"rgba(34,197,94,0.10)");
+  });
+
+  g.append("path")
+    .datum(series)
+    .attr("fill","none")
+    .attr("stroke","#38bdf8")
+    .attr("stroke-width",2)
+    .attr("d",d3.line().x(d=>x(d.year)).y(d=>y(d.value)));
+
+  g.append("g").attr("class","axis").attr("transform",`translate(0,${innerHeight})`).call(d3.axisBottom(x).tickFormat(d3.format("d")));
+  g.append("g").attr("class","axis").call(d3.axisLeft(y));
+
+  g.append("text")
+    .attr("x",0)
+    .attr("y",-10)
+    .attr("fill","#e5e7eb")
+    .text("Average OPS over time");
+
+  g.append("text")
+    .attr("x",innerWidth/2)
+    .attr("y",innerHeight+30)
+    .attr("fill","#e5e7eb")
+    .attr("text-anchor","middle")
+    .text("Year");
+
+  g.append("text")
+    .attr("transform","rotate(-90)")
+    .attr("x",-innerHeight/2)
+    .attr("y",-45)
+    .attr("fill","#e5e7eb")
+    .attr("text-anchor","middle")
+    .text("Average OPS");
+}
+
+function drawTrendPitching(){
+  const era=currentEra==="all"?eras.all:eras[currentEra];
+  const data=pitchingData.filter(d=>{
+    const inEra=d.yearID>=era.start&&d.yearID<=era.end;
+    const teamOk=currentTeam==="all"||d.teamID===currentTeam;
+    const roleOk=currentRole==="all"||d.role===currentRole;
+    return inEra&&teamOk&&roleOk;
+  });
+  if(!data.length)return;
+
+  const byYear=d3.rollup(data,v=>d3.mean(v,d=>d.FIP),d=>d.yearID);
+  const years=Array.from(byYear.keys()).sort((a,b)=>a-b);
+  const series=years.map(y=>({year:y,value:byYear.get(y)}));
+
+  const svg=d3.select("#trend-container").append("svg")
+    .attr("width",960).attr("height",220);
+
+  const margin={top:30,right:20,bottom:40,left:60};
+  const innerWidth=960-margin.left-margin.right;
+  const innerHeight=220-margin.top-margin.bottom;
+
+  const g=svg.append("g").attr("transform",`translate(${margin.left},${margin.top})`);
+
+  const x=d3.scaleLinear().range([0,innerWidth]).domain([1970,2015]);
+  const y=d3.scaleLinear().range([innerHeight,0])
+    .domain(d3.extent(series,d=>d.value));
+
+  eraList.forEach(e=>{
+    g.append("rect")
+      .attr("x",x(e.start))
+      .attr("y",0)
+      .attr("width",x(e.end)-x(e.start))
+      .attr("height",innerHeight)
+      .attr("fill",e.key==="expansion"?"rgba(59,130,246,0.10)":e.key==="steroid"?"rgba(239,68,68,0.10)":"rgba(34,197,94,0.10)");
+  });
+
+  g.append("path")
+    .datum(series)
+    .attr("fill","none")
+    .attr("stroke","#f97316")
+    .attr("stroke-width",2)
+    .attr("d",d3.line().x(d=>x(d.year)).y(d=>y(d.value)));
+
+  g.append("g").attr("class","axis").attr("transform",`translate(0,${innerHeight})`).call(d3.axisBottom(x).tickFormat(d3.format("d")));
+  g.append("g").attr("class","axis").call(d3.axisLeft(y));
+
+  g.append("text")
+    .attr("x",0)
+    .attr("y",-10)
+    .attr("fill","#e5e7eb")
+    .text("Average FIP over time");
+
+  g.append("text")
+    .attr("x",innerWidth/2)
+    .attr("y",innerHeight+30)
+    .attr("fill","#e5e7eb")
+    .attr("text-anchor","middle")
+    .text("Year");
+
+  g.append("text")
+    .attr("transform","rotate(-90)")
+    .attr("x",-innerHeight/2)
+    .attr("y",-45)
+    .attr("fill","#e5e7eb")
+    .attr("text-anchor","middle")
+    .text("Average FIP");
 }
 
 function showTipOPS(e,d){
@@ -341,6 +501,11 @@ FIP: ${d.FIP.toFixed(2)}`;
   panel.classList.remove("hidden");
 }
 
+function setEraButtons(activeId){
+  [btnEraAll,btnEraExpansion,btnEraSteroid,btnEraModern].forEach(b=>b.classList.remove("era-active"));
+  activeId.classList.add("era-active");
+}
+
 yearSlider.addEventListener("input",()=>{
   useAllYears=false;
   yearLabel.textContent=`Year: ${yearSlider.value}`;
@@ -357,7 +522,6 @@ btnOPS.addEventListener("click",()=>{
   currentView="ops";
   btnOPS.classList.add("active");
   btnFIP.classList.remove("active");
-  roleGroup.style.display="none";
   drawOPS();
 });
 
@@ -365,7 +529,6 @@ btnFIP.addEventListener("click",()=>{
   currentView="fip";
   btnFIP.classList.add("active");
   btnOPS.classList.remove("active");
-  roleGroup.style.display="flex";
   drawFIP();
 });
 
@@ -396,4 +559,28 @@ btnRoleReliever.addEventListener("click",()=>{
   btnRoleAll.classList.remove("active");
   btnRoleStarter.classList.remove("active");
   drawFIP();
+});
+
+btnEraAll.addEventListener("click",()=>{
+  currentEra="all";
+  setEraButtons(btnEraAll);
+  currentView==="ops"?drawOPS():drawFIP();
+});
+
+btnEraExpansion.addEventListener("click",()=>{
+  currentEra="expansion";
+  setEraButtons(btnEraExpansion);
+  currentView==="ops"?drawOPS():drawFIP();
+});
+
+btnEraSteroid.addEventListener("click",()=>{
+  currentEra="steroid";
+  setEraButtons(btnEraSteroid);
+  currentView==="ops"?drawOPS():drawFIP();
+});
+
+btnEraModern.addEventListener("click",()=>{
+  currentEra="modern";
+  setEraButtons(btnEraModern);
+  currentView==="ops"?drawOPS():drawFIP();
 });
