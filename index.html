@@ -1,49 +1,65 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>MLB Dashboard</title>
-<link rel="stylesheet" href="styles.css" />
-<script src="https://d3js.org/d3.v7.min.js"></script>
+  <meta charset="UTF-8" />
+  <title>Baseball Era Dashboard</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
 <body>
+  <div id="app">
+    <header id="page-header">
+      <h1>Baseball Run Environment and Player Performance (1970–2015)</h1>
+      <p>
+        Explore how the league scoring environment changed over time and how the
+        top hitters and pitchers compare across eras.
+      </p>
+    </header>
 
-<div id="controls">
-  <button id="view-hitters" class="toggle-button active">Hitters</button>
-  <button id="view-pitchers" class="toggle-button">Pitchers</button>
-</div>
+    <section id="top-charts" class="panel-group">
+      <div class="chart-grid">
+        <div class="panel">
+          <div id="chart-runs"></div>
+        </div>
+        <div class="panel">
+          <div id="chart-tto"></div>
+        </div>
+        <div class="panel">
+          <div id="chart-ops"></div>
+        </div>
+        <div class="panel">
+          <div id="chart-era-fip"></div>
+        </div>
+      </div>
+    </section>
 
-<div id="era-controls">
-  <span class="era-label">Era:</span>
-  <button id="era-all" class="era-button era-active">All</button>
-  <button id="era-expansion" class="era-button">Expansion</button>
-  <button id="era-steroid" class="era-button">Steroid</button>
-  <button id="era-modern" class="era-button">Modern</button>
-</div>
+    <section id="player-section" class="panel-group">
+      <div class="panel">
+        <div class="controls-bar">
+          <div class="toggle-group">
+            <button id="view-hitters" class="toggle-btn active">Hitters</button>
+            <button id="view-pitchers" class="toggle-btn">Pitchers</button>
+          </div>
+          <div class="toggle-group era-group">
+            <button id="era-all" class="toggle-btn era-active">All</button>
+            <button id="era-expansion" class="toggle-btn">Expansion</button>
+            <button id="era-steroid" class="toggle-btn">Steroid</button>
+            <button id="era-modern" class="toggle-btn">Modern</button>
+          </div>
+        </div>
 
-<div id="player-scatter-panel" class="panel">
-  <div id="player-scatter-title"></div>
-  <div id="player-scatter-container"></div>
-  <div id="player-scatter-legend"></div>
-</div>
+        <h2 id="player-scatter-title"></h2>
 
-<div id="main-layout">
-  <div id="left-column">
-    <div class="chart-row">
-      <div id="chart-runs" class="panel"></div>
-      <div id="chart-tto" class="panel"></div>
-    </div>
-
-    <div class="chart-row">
-      <div id="chart-ops" class="panel"></div>
-      <div id="chart-era-fip" class="panel"></div>
-    </div>
+        <div id="player-scatter-layout">
+          <div id="player-scatter-container"></div>
+          <div id="player-scatter-legend"></div>
+        </div>
+      </div>
+    </section>
   </div>
-</div>
 
-<div id="tooltip"></div>
+  <div id="tooltip"></div>
 
-<script src="script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>

@@ -374,7 +374,7 @@ Promise.all([
 function drawRunsChart() {
   d3.select("#chart-runs").selectAll("*").remove();
   const data = runsSeries;
-  const { g, innerWidth, innerHeight } = initChart("#chart-runs", 310);
+  const { g, innerWidth, innerHeight } = initChart("#chart-runs", 350);
   const x = d3.scaleLinear().range([0, innerWidth]).domain([1970, 2015]);
   const y = d3.scaleLinear().range([innerHeight, 0]).domain(d3.extent(data, d => d.rg));
 
@@ -394,13 +394,12 @@ function drawRunsChart() {
   g.append("text")
     .attr("x", 0)
     .attr("y", -10)
-    .attr("fill", "#111827")
+    .fill("#111827")
     .text("League runs per team-game");
 
   g.append("text")
     .attr("x", innerWidth / 2)
     .attr("y", innerHeight + 30)
-    .attr("fill", "#111827")
     .attr("text-anchor", "middle")
     .text("Year");
 
@@ -408,7 +407,6 @@ function drawRunsChart() {
     .attr("transform", "rotate(-90)")
     .attr("x", -innerHeight / 2)
     .attr("y", -45)
-    .attr("fill", "#111827")
     .attr("text-anchor", "middle")
     .text("Runs per game");
 
@@ -418,7 +416,7 @@ function drawRunsChart() {
 function drawTTOChart() {
   d3.select("#chart-tto").selectAll("*").remove();
   const data = ttoSeries;
-  const { g, innerWidth, innerHeight } = initChart("#chart-tto", 310);
+  const { g, innerWidth, innerHeight } = initChart("#chart-tto", 350);
   const x = d3.scaleLinear().range([0, innerWidth]).domain([1970, 2015]);
   const maxVal = d3.max(data, d => Math.max(d.kPct, d.bbPct, d.hrPct));
   const y = d3.scaleLinear().range([innerHeight, 0]).domain([0, maxVal]);
@@ -440,13 +438,11 @@ function drawTTOChart() {
   g.append("text")
     .attr("x", 0)
     .attr("y", -10)
-    .attr("fill", "#111827")
     .text("League three true outcomes rates");
 
   g.append("text")
     .attr("x", innerWidth / 2)
     .attr("y", innerHeight + 30)
-    .attr("fill", "#111827")
     .attr("text-anchor", "middle")
     .text("Year");
 
@@ -454,7 +450,6 @@ function drawTTOChart() {
     .attr("transform", "rotate(-90)")
     .attr("x", -innerHeight / 2)
     .attr("y", -45)
-    .attr("fill", "#111827")
     .attr("text-anchor", "middle")
     .text("Rate of PA");
 
@@ -467,7 +462,7 @@ function drawTTOChart() {
   items.forEach((d, i) => {
     const gi = legend.append("g").attr("transform", `translate(0,${i * 18})`);
     gi.append("rect").attr("width", 10).attr("height", 10).attr("fill", d.color);
-    gi.append("text").attr("x", 16).attr("y", 9).attr("fill", "#111827").attr("font-size", "0.75rem").text(d.label);
+    gi.append("text").attr("x", 16).attr("y", 9).attr("font-size", "0.75rem").text(d.label);
   });
 
   addEraLegend(g, innerWidth);
@@ -476,7 +471,7 @@ function drawTTOChart() {
 function drawOpsChart() {
   d3.select("#chart-ops").selectAll("*").remove();
   const data = opsSeries;
-  const { g, innerWidth, innerHeight } = initChart("#chart-ops", 310);
+  const { g, innerWidth, innerHeight } = initChart("#chart-ops", 350);
   const x = d3.scaleLinear().range([0, innerWidth]).domain([1970, 2015]);
   const y = d3.scaleLinear().range([innerHeight, 0]).domain(d3.extent(data, d => d.ops));
 
@@ -496,13 +491,11 @@ function drawOpsChart() {
   g.append("text")
     .attr("x", 0)
     .attr("y", -10)
-    .attr("fill", "#111827")
     .text("League OPS over time");
 
   g.append("text")
     .attr("x", innerWidth / 2)
     .attr("y", innerHeight + 30)
-    .attr("fill", "#111827")
     .attr("text-anchor", "middle")
     .text("Year");
 
@@ -510,7 +503,6 @@ function drawOpsChart() {
     .attr("transform", "rotate(-90)")
     .attr("x", -innerHeight / 2)
     .attr("y", -45)
-    .attr("fill", "#111827")
     .attr("text-anchor", "middle")
     .text("OPS");
 
@@ -520,7 +512,7 @@ function drawOpsChart() {
 function drawEraFipChart() {
   d3.select("#chart-era-fip").selectAll("*").remove();
   const data = pitchSeries;
-  const { g, innerWidth, innerHeight } = initChart("#chart-era-fip", 310);
+  const { g, innerWidth, innerHeight } = initChart("#chart-era-fip", 350);
   const x = d3.scaleLinear().range([0, innerWidth]).domain([1970, 2015]);
   const minY = d3.min(data, d => Math.min(d.era, d.fip));
   const maxY = d3.max(data, d => Math.max(d.era, d.fip));
@@ -541,13 +533,11 @@ function drawEraFipChart() {
   g.append("text")
     .attr("x", 0)
     .attr("y", -10)
-    .attr("fill", "#111827")
     .text("League ERA and FIP over time");
 
   g.append("text")
     .attr("x", innerWidth / 2)
     .attr("y", innerHeight + 30)
-    .attr("fill", "#111827")
     .attr("text-anchor", "middle")
     .text("Year");
 
@@ -555,7 +545,6 @@ function drawEraFipChart() {
     .attr("transform", "rotate(-90)")
     .attr("x", -innerHeight / 2)
     .attr("y", -45)
-    .attr("fill", "#111827")
     .attr("text-anchor", "middle")
     .text("Runs allowed per 9");
 
@@ -567,7 +556,7 @@ function drawEraFipChart() {
   items.forEach((d, i) => {
     const gi = legend.append("g").attr("transform", `translate(0,${i * 18})`);
     gi.append("rect").attr("width", 10).attr("height", 10).attr("fill", d.color);
-    gi.append("text").attr("x", 16).attr("y", 9).attr("fill", "#111827").attr("font-size", "0.75rem").text(d.label);
+    gi.append("text").attr("x", 16).attr("y", 9).attr("font-size", "0.75rem").text(d.label);
   });
 
   addEraLegend(g, innerWidth);
@@ -598,7 +587,7 @@ function drawHitterScatter() {
   const bbox = svg.node().getBoundingClientRect();
   const width = bbox.width;
   const height = bbox.height;
-  const margin = { top: 40, right: 40, bottom: 55, left: 70 };
+  const margin = { top: 40, right: 60, bottom: 65, left: 90 };
   const innerW = width - margin.left - margin.right;
   const innerH = height - margin.top - margin.bottom;
   const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
@@ -613,7 +602,7 @@ function drawHitterScatter() {
 
   const rScale = d3.scaleSqrt()
     .domain([0.00, 1.05])
-    .range([6, 26]);
+    .range([6, 22]);
 
   g.append("g")
     .attr("transform", `translate(0,${innerH})`)
@@ -626,15 +615,13 @@ function drawHitterScatter() {
     .attr("x", innerW / 2)
     .attr("y", innerH + 40)
     .attr("text-anchor", "middle")
-    .attr("fill", "#111827")
     .text("Batting Average (AVG)");
 
   g.append("text")
     .attr("x", -innerH / 2)
-    .attr("y", -50)
+    .attr("y", -55)
     .attr("transform", "rotate(-90)")
     .attr("text-anchor", "middle")
-    .attr("fill", "#111827")
     .text("Home Run Rate (HR%)");
 
   let lockedDatum = null;
@@ -643,15 +630,24 @@ function drawHitterScatter() {
     .data(data)
     .enter()
     .append("g")
+    .attr("class", "h-node")
     .attr("transform", d => `translate(${x(d.AVG)},${y(d.HR_rate)})`);
 
-  nodes.append("circle")
+  const bubbles = nodes.append("circle")
+    .attr("class", "bubble")
     .attr("r", d => rScale(d.OPS))
     .attr("fill", eraColors[currentEra])
     .attr("stroke", "#0f172a")
     .attr("stroke-width", 1.2)
+    .attr("opacity", 1);
+
+  nodes.append("circle")
+    .attr("class", "hit-area")
+    .attr("r", d => rScale(d.OPS) + 8)
+    .attr("fill", "transparent")
     .on("mouseenter", (event, d) => {
       if (lockedDatum) return;
+      d3.select(event.currentTarget.parentNode).raise();
       showHitterTooltip(event, d);
     })
     .on("mousemove", (event) => {
@@ -665,6 +661,8 @@ function drawHitterScatter() {
     })
     .on("click", (event, d) => {
       lockedDatum = d;
+      d3.select(event.currentTarget.parentNode).raise();
+      updateHitterHighlight();
       showHitterTooltip(event, d);
       event.stopPropagation();
     });
@@ -683,11 +681,26 @@ function drawHitterScatter() {
       .style("top", event.pageY - 15 + "px");
   }
 
+  function updateHitterHighlight() {
+    if (!lockedDatum) {
+      bubbles
+        .attr("opacity", 1)
+        .attr("stroke", "#0f172a")
+        .attr("stroke-width", 1.2);
+      return;
+    }
+    bubbles
+      .attr("opacity", d => d === lockedDatum ? 1 : 0.3)
+      .attr("stroke", d => d === lockedDatum ? "#facc15" : "#0f172a")
+      .attr("stroke-width", d => d === lockedDatum ? 3 : 1.2);
+  }
+
   d3.select("body").on("click.playerScatter", function (e) {
     const target = e.target;
     if (!target.closest || !target.closest("svg")) {
       lockedDatum = null;
       tooltip.style("opacity", 0);
+      updateHitterHighlight();
     }
   });
 
@@ -709,7 +722,7 @@ function drawPitcherScatter() {
   const bbox = svg.node().getBoundingClientRect();
   const width = bbox.width;
   const height = bbox.height;
-  const margin = { top: 40, right: 40, bottom: 55, left: 70 };
+  const margin = { top: 40, right: 60, bottom: 65, left: 90 };
   const innerW = width - margin.left - margin.right;
   const innerH = height - margin.top - margin.bottom;
   const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
@@ -724,7 +737,7 @@ function drawPitcherScatter() {
 
   const rScale = d3.scaleSqrt()
     .domain([1.7, 6.2])
-    .range([26, 8]);
+    .range([22, 8]);
 
   g.append("g")
     .attr("transform", `translate(0,${innerH})`)
@@ -737,15 +750,13 @@ function drawPitcherScatter() {
     .attr("x", innerW / 2)
     .attr("y", innerH + 40)
     .attr("text-anchor", "middle")
-    .attr("fill", "#111827")
     .text("K/BB Ratio");
 
   g.append("text")
     .attr("x", -innerH / 2)
-    .attr("y", -50)
+    .attr("y", -55)
     .attr("transform", "rotate(-90)")
     .attr("text-anchor", "middle")
-    .attr("fill", "#111827")
     .text("ERA (lower = better)");
 
   let lockedDatum = null;
@@ -754,15 +765,24 @@ function drawPitcherScatter() {
     .data(data)
     .enter()
     .append("g")
+    .attr("class", "p-node")
     .attr("transform", d => `translate(${x(d.KBB)},${y(d.ERA)})`);
 
-  nodes.append("circle")
+  const bubbles = nodes.append("circle")
+    .attr("class", "bubble")
     .attr("r", d => rScale(d.FIP))
     .attr("fill", eraColors[currentEra])
     .attr("stroke", "#0f172a")
     .attr("stroke-width", 1.2)
+    .attr("opacity", 1);
+
+  nodes.append("circle")
+    .attr("class", "hit-area")
+    .attr("r", d => rScale(d.FIP) + 8)
+    .attr("fill", "transparent")
     .on("mouseenter", (event, d) => {
       if (lockedDatum) return;
+      d3.select(event.currentTarget.parentNode).raise();
       showPitchTooltip(event, d);
     })
     .on("mousemove", (event) => {
@@ -776,6 +796,8 @@ function drawPitcherScatter() {
     })
     .on("click", (event, d) => {
       lockedDatum = d;
+      d3.select(event.currentTarget.parentNode).raise();
+      updatePitchHighlight();
       showPitchTooltip(event, d);
       event.stopPropagation();
     });
@@ -795,11 +817,26 @@ function drawPitcherScatter() {
       .style("top", event.pageY - 15 + "px");
   }
 
+  function updatePitchHighlight() {
+    if (!lockedDatum) {
+      bubbles
+        .attr("opacity", 1)
+        .attr("stroke", "#0f172a")
+        .attr("stroke-width", 1.2);
+      return;
+    }
+    bubbles
+      .attr("opacity", d => d === lockedDatum ? 1 : 0.3)
+      .attr("stroke", d => d === lockedDatum ? "#facc15" : "#0f172a")
+      .attr("stroke-width", d => d === lockedDatum ? 3 : 1.2);
+  }
+
   d3.select("body").on("click.playerScatter", function (e) {
     const target = e.target;
     if (!target.closest || !target.closest("svg")) {
       lockedDatum = null;
       tooltip.style("opacity", 0);
+      updatePitchHighlight();
     }
   });
 
