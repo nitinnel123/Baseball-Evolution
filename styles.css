@@ -1,18 +1,18 @@
 body {
   margin: 0;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background: #020617;
-  color: #e5e7eb;
+  background: #f3f4f6;
+  color: #111827;
 }
 
 #controls {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 1rem;
   padding: 0.75rem 1.5rem;
-  background: #020617;
-  border-bottom: 1px solid #111827;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .control-group {
@@ -23,39 +23,24 @@ body {
   font-size: 0.9rem;
 }
 
-label {
-  font-weight: 500;
-}
-
-.pill,
 .toggle-button {
   border-radius: 999px;
-  border: 1px solid #374151;
-  background: #0b1120;
-  color: #e5e7eb;
-  padding: 0.25rem 0.8rem;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #111827;
+  padding: 0.25rem 0.9rem;
   font-size: 0.85rem;
   cursor: pointer;
 }
 
-.pill:hover,
 .toggle-button:hover {
-  border-color: #60a5fa;
+  border-color: #2563eb;
 }
 
-.toggle-button.active,
-.pill.active {
+.toggle-button.active {
   background: #2563eb;
-  border-color: #60a5fa;
-}
-
-select {
-  border-radius: 999px;
-  border: 1px solid #374151;
-  background: #0b1120;
-  color: #e5e7eb;
-  padding: 0.25rem 0.7rem;
-  font-size: 0.85rem;
+  border-color: #2563eb;
+  color: #ffffff;
 }
 
 #era-controls {
@@ -64,7 +49,8 @@ select {
   flex-wrap: wrap;
   gap: 0.5rem;
   padding: 0.5rem 1.5rem 0.25rem;
-  background: #020617;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .era-label {
@@ -74,21 +60,22 @@ select {
 
 .era-button {
   border-radius: 999px;
-  border: 1px solid #374151;
-  background: #0b1120;
-  color: #e5e7eb;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #111827;
   padding: 0.25rem 0.9rem;
   font-size: 0.85rem;
   cursor: pointer;
 }
 
 .era-button:hover {
-  border-color: #60a5fa;
+  border-color: #2563eb;
 }
 
 .era-active {
   background: #2563eb;
-  border-color: #60a5fa;
+  border-color: #2563eb;
+  color: #ffffff;
 }
 
 #main-layout {
@@ -110,10 +97,11 @@ select {
 }
 
 .panel {
-  background: #020617;
+  background: #ffffff;
   border-radius: 1rem;
   padding: 0.75rem;
-  border: 1px solid #111827;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
   flex: 1;
 }
 
@@ -125,7 +113,7 @@ select {
 
 #scatter-title {
   font-size: 0.85rem;
-  color: #9ca3af;
+  color: #6b7280;
 }
 
 #scatter-container {
@@ -148,56 +136,37 @@ select {
 }
 
 .legend-swatch {
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   border-radius: 999px;
-  border: 1px solid #020617;
-}
-
-#player-panel {
-  width: 280px;
-  background: #020617;
-  border-radius: 1rem;
-  border: 1px solid #111827;
-  padding: 0.75rem 0.9rem;
-  display: flex;
-  flex-direction: column;
-  font-size: 0.9rem;
-}
-
-.hidden {
-  display: none;
-}
-
-#panel-content {
-  white-space: pre-line;
-  color: #e5e7eb;
+  border: 1px solid #9ca3af;
 }
 
 #tooltip {
   position: absolute;
   pointer-events: none;
   opacity: 0;
-  background: rgba(15,23,42,0.98);
-  color: #f9fafb;
+  background: #ffffff;
+  color: #111827;
   padding: 0.45rem 0.7rem;
   border-radius: 0.5rem;
   font-size: 0.8rem;
-  border: 1px solid #4b5563;
+  border: 1px solid #d1d5db;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15);
 }
 
 .axis text {
-  fill: #e5e7eb;
+  fill: #111827;
   font-size: 0.8rem;
 }
 
 .axis path,
 .axis line {
-  stroke: #4b5563;
+  stroke: #9ca3af;
 }
 
 .grid line {
-  stroke: #1e293b;
+  stroke: #e5e7eb;
   stroke-dasharray: 2 4;
 }
 
@@ -205,31 +174,27 @@ select {
   stroke: none;
 }
 
-circle.selected {
-  stroke: #ffffff;
-  stroke-width: 2px;
-}
-
 #writeup-section {
   margin-top: 2rem;
   padding: 1.5rem;
-  background: #0b1120;
-  border: 1px solid #1e293b;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
   border-radius: 1rem;
   max-width: 900px;
   margin-left: auto;
   margin-right: auto;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
 }
 
 #writeup-section h2 {
   margin-top: 0;
-  color: #e5e7eb;
+  color: #111827;
   font-weight: 600;
 }
 
 #writeup-section p {
   line-height: 1.5;
-  color: #e5e7eb;
+  color: #374151;
   font-size: 0.95rem;
   margin-bottom: 1.5rem;
 }
