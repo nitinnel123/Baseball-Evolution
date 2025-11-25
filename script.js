@@ -604,15 +604,15 @@ function drawHitterScatter() {
   const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
 
   const x = d3.scaleLinear()
-    .domain(d3.extent(data, d => d.AVG)).nice()
+    .domain([0.07, 0.35])
     .range([0, innerW]);
 
   const y = d3.scaleLinear()
-    .domain(d3.extent(data, d => d.HR_rate)).nice()
+    .domain([0.00, 0.08])
     .range([innerH, 0]);
 
   const rScale = d3.scaleSqrt()
-    .domain(d3.extent(data, d => d.OPS))
+    .domain([0.00, 1.05])
     .range([6, 26]);
 
   g.append("g")
@@ -715,17 +715,16 @@ function drawPitcherScatter() {
   const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
 
   const x = d3.scaleLinear()
-    .domain(d3.extent(data, d => d.KBB)).nice()
+    .domain([0.5, 9.0])
     .range([0, innerW]);
 
-  const eraExtent = d3.extent(data, d => d.ERA);
   const y = d3.scaleLinear()
-    .domain([eraExtent[1], eraExtent[0]]) // inverted
+    .domain([6.3, 1.5])
     .range([innerH, 0]);
 
   const rScale = d3.scaleSqrt()
-    .domain(d3.extent(data, d => d.FIP))
-    .range([26, 8]); // reversed so lower FIP = bigger bubble
+    .domain([1.7, 6.2])
+    .range([26, 8]);
 
   g.append("g")
     .attr("transform", `translate(0,${innerH})`)
