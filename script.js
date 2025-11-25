@@ -484,7 +484,7 @@ function filteredDecadePitching(){
 function drawScatterOPS(){
   d3.select("#scatter-container").selectAll("*").remove();
   d3.select("#legend-container").selectAll("*").remove();
-  scatterTitle.textContent="Decade hitting: AVG vs HR% (bubble size = OPS)";
+  scatterTitle.textContent="Decade hitting (bar chart): AVG, HR%, OPS";
 
   const data=filteredDecadeBatting();
   if(!data.length)return;
@@ -495,56 +495,78 @@ function drawScatterOPS(){
   const bbox=svg.node().getBoundingClientRect();
   const width=bbox.width;
   const height=bbox.height;
-  const margin={top:30,right:20,bottom:60,left:70};
+  const margin={top:40,right:20,bottom:80,left:70};
   const innerWidth=width-margin.left-margin.right;
   const innerHeight=height-margin.top-margin.bottom;
   const g=svg.append("g").attr("transform",`translate(${margin.left},${margin.top})`);
 
-  const xAll=decadeBatting.map(d=>d.AVG);
-  const yAll=decadeBatting.map(d=>d.HR_per_PA);
-  const rAll=decadeBatting.map(d=>d.OPS);
+  const metrics=["AVG","HR%","OPS"];
 
-  const x=d3.scaleLinear().range([0,innerWidth]).domain(d3.extent(xAll));
-  const y=d3.scaleLinear().range([innerHeight,0]).domain([0,d3.max(yAll)]);
-  const r=d3.scaleSqrt().range([18,36]).domain(d3.extent(rAll));
+  const formatted=data.map(d=>({
+    decade:d.decade,
+    label:d.label,
+    metrics:{
+      "AVG":d.AVG,
+      "HR%":d.HR_per_PA,
+      "OPS":d.OPS
+    }
+  }));
 
-  const xGrid=d3.axisBottom(x).tickSize(-innerHeight).tickFormat("");
-  const yGrid=d3.axisLeft(y).tickSize(-innerWidth).tickFormat("");
-  g.append("g").attr("class","grid").attr("transform",`translate(0,${innerHeight})`).call(xGrid);
-  g.append("g").attr("class","grid").call(yGrid);
+  const x0=d3.scaleBand()
+    .domain(formatted.map(d=>d.decade))
+    .range([0,innerWidth])
+    .padding(0.25);
 
-  g.append("g").attr("class","axis").attr("transform",`translate(0,${innerHeight})`).call(d3.axisBottom(x).tickFormat(d=>d.toFixed(3)));
-  g.append("g").attr("class","axis").call(d3.axisLeft(y).tickFormat(d3.format(".1%")));
+  const x1=d3.scaleBand()
+    .domain(metrics)
+    .range([0,x0.bandwidth()])
+    .padding(0.15);
 
-  g.append("text")
-    .attr("x",innerWidth/2)
-    .attr("y",innerHeight+45)
-    .attr("fill","#111827")
-    .attr("text-anchor","middle")
-    .text("Batting Average (AVG)");
+  const maxY=d3.max(formatted,d=>Math.max(d.metrics["AVG"],d.metrics["HR%"],d.metrics["OPS"]));
+  const y=d3.scaleLinear()
+    .domain([0,maxY])
+    .nice()
+    .range([innerHeight,0]);
 
-  g.append("text")
-    .attr("transform","rotate(-90)")
-    .attr("x",-innerHeight/2)
-    .attr("y",-45)
-    .attr("fill","#111827")
-    .attr("text-anchor","middle")
-    .text("Home run rate (HR%)");
+  const colors={
+    "AVG":"#22c55e",
+    "HR%":"#ef4444",
+    "OPS":"#3b82f6"
+  };
 
-  g.selectAll("circle").data(data).enter().append("circle")
-    .attr("cx",d=>x(d.AVG))
-    .attr("cy",d=>y(d.HR_per_PA))
-    .attr("r",d=>r(d.OPS))
-    .attr("fill",d=>decadeColors[d.decade])
-    .attr("opacity",0.9)
+  g.append("g")
+    .attr("transform",`translate(0,${innerHeight})`)
+    .call(d3.axisBottom(x0));
+
+  g.append("g")
+    .call(d3.axisLeft(y));
+
+  const groups=g.selectAll(".bar-group")
+    .data(formatted)
+    .enter()
+    .append("g")
+    .attr("transform",d=>`translate(${x0(d.decade)},0)`);
+
+  groups.selectAll("rect")
+    .data(d=>metrics.map(m=>({
+      metric:m,
+      value:d.metrics[m],
+      decadeLabel:d.label
+    })))
+    .enter()
+    .append("rect")
+    .attr("x",d=>x1(d.metric))
+    .attr("width",x1.bandwidth())
+    .attr("y",innerHeight)
+    .attr("height",0)
+    .attr("fill",d=>colors[d.metric])
     .on("mouseenter",(e,d)=>{
       tooltip
         .style("opacity",1)
         .html(
-          `<strong>${d.label}</strong><br>`+
-          `AVG: ${d.AVG.toFixed(3)}<br>`+
-          `HR%: ${(d.HR_per_PA*100).toFixed(2)}%<br>`+
-          `OPS: ${d.OPS.toFixed(3)}`
+          `<strong>${d.decadeLabel}</strong><br>`+
+          `${d.metric}: `+
+          (d.metric==="HR%"?(d.value*100).toFixed(2)+"%":d.value.toFixed(3))
         );
     })
     .on("mousemove",e=>{
@@ -554,24 +576,27 @@ function drawScatterOPS(){
     })
     .on("mouseleave",()=>{
       tooltip.style("opacity",0);
-    });
+    })
+    .transition()
+    .duration(900)
+    .ease(d3.easeCubicOut)
+    .attr("y",d=>y(d.value))
+    .attr("height",d=>innerHeight-y(d.value));
 
   const legend=d3.select("#legend-container");
-  const items=legend.selectAll(".legend-item")
-    .data(decadeBatting)
-    .enter()
-    .append("div")
-    .attr("class","legend-item");
-  items.append("span")
-    .attr("class","legend-swatch")
-    .style("background-color",d=>decadeColors[d.decade]);
-  items.append("span").text(d=>d.decade);
+  metrics.forEach(m=>{
+    const item=legend.append("div").attr("class","legend-item");
+    item.append("span")
+      .attr("class","legend-swatch")
+      .style("background-color",colors[m]);
+    item.append("span").text(m);
+  });
 }
 
 function drawScatterFIP(){
   d3.select("#scatter-container").selectAll("*").remove();
   d3.select("#legend-container").selectAll("*").remove();
-  scatterTitle.textContent="Decade pitching: K/9 vs ERA (bubble size = FIP)";
+  scatterTitle.textContent="Decade pitching (bar chart): K/9, ERA, FIP";
 
   const data=filteredDecadePitching();
   if(!data.length)return;
@@ -582,56 +607,77 @@ function drawScatterFIP(){
   const bbox=svg.node().getBoundingClientRect();
   const width=bbox.width;
   const height=bbox.height;
-  const margin={top:30,right:20,bottom:60,left:70};
+  const margin={top:40,right:20,bottom:80,left:70};
   const innerWidth=width-margin.left-margin.right;
   const innerHeight=height-margin.top-margin.bottom;
   const g=svg.append("g").attr("transform",`translate(${margin.left},${margin.top})`);
 
-  const xAll=decadePitching.map(d=>d.K_per_9);
-  const yAll=decadePitching.map(d=>d.ERA);
-  const rAll=decadePitching.map(d=>d.FIP);
+  const metrics=["K/9","ERA","FIP"];
 
-  const x=d3.scaleLinear().range([0,innerWidth]).domain(d3.extent(xAll));
-  const y=d3.scaleLinear().range([innerHeight,0]).domain(d3.extent(yAll));
-  const r=d3.scaleSqrt().range([18,36]).domain(d3.extent(rAll));
+  const formatted=data.map(d=>({
+    decade:d.decade,
+    label:d.label,
+    metrics:{
+      "K/9":d.K_per_9,
+      "ERA":d.ERA,
+      "FIP":d.FIP
+    }
+  }));
 
-  const xGrid=d3.axisBottom(x).tickSize(-innerHeight).tickFormat("");
-  const yGrid=d3.axisLeft(y).tickSize(-innerWidth).tickFormat("");
-  g.append("g").attr("class","grid").attr("transform",`translate(0,${innerHeight})`).call(xGrid);
-  g.append("g").attr("class","grid").call(yGrid);
+  const x0=d3.scaleBand()
+    .domain(formatted.map(d=>d.decade))
+    .range([0,innerWidth])
+    .padding(0.25);
 
-  g.append("g").attr("class","axis").attr("transform",`translate(0,${innerHeight})`).call(d3.axisBottom(x));
-  g.append("g").attr("class","axis").call(d3.axisLeft(y));
+  const x1=d3.scaleBand()
+    .domain(metrics)
+    .range([0,x0.bandwidth()])
+    .padding(0.15);
 
-  g.append("text")
-    .attr("x",innerWidth/2)
-    .attr("y",innerHeight+45)
-    .attr("fill","#111827")
-    .attr("text-anchor","middle")
-    .text("Strikeouts per 9 innings (K/9)");
+  const maxY=d3.max(formatted,d=>Math.max(d.metrics["K/9"],d.metrics["ERA"],d.metrics["FIP"]));
+  const y=d3.scaleLinear()
+    .domain([0,maxY])
+    .nice()
+    .range([innerHeight,0]);
 
-  g.append("text")
-    .attr("transform","rotate(-90)")
-    .attr("x",-innerHeight/2)
-    .attr("y",-45)
-    .attr("fill","#111827")
-    .attr("text-anchor","middle")
-    .text("ERA");
+  const colors={
+    "K/9":"#3b82f6",
+    "ERA":"#ef4444",
+    "FIP":"#f97316"
+  };
 
-  g.selectAll("circle").data(data).enter().append("circle")
-    .attr("cx",d=>x(d.K_per_9))
-    .attr("cy",d=>y(d.ERA))
-    .attr("r",d=>r(d.FIP))
-    .attr("fill",d=>decadeColors[d.decade])
-    .attr("opacity",0.9)
+  g.append("g")
+    .attr("transform",`translate(0,${innerHeight})`)
+    .call(d3.axisBottom(x0));
+
+  g.append("g")
+    .call(d3.axisLeft(y));
+
+  const groups=g.selectAll(".bar-group")
+    .data(formatted)
+    .enter()
+    .append("g")
+    .attr("transform",d=>`translate(${x0(d.decade)},0)`);
+
+  groups.selectAll("rect")
+    .data(d=>metrics.map(m=>({
+      metric:m,
+      value:d.metrics[m],
+      decadeLabel:d.label
+    })))
+    .enter()
+    .append("rect")
+    .attr("x",d=>x1(d.metric))
+    .attr("width",x1.bandwidth())
+    .attr("y",innerHeight)
+    .attr("height",0)
+    .attr("fill",d=>colors[d.metric])
     .on("mouseenter",(e,d)=>{
       tooltip
         .style("opacity",1)
         .html(
-          `<strong>${d.label}</strong><br>`+
-          `K/9: ${d.K_per_9.toFixed(2)}<br>`+
-          `ERA: ${d.ERA.toFixed(2)}<br>`+
-          `FIP: ${d.FIP.toFixed(2)}`
+          `<strong>${d.decadeLabel}</strong><br>`+
+          `${d.metric}: ${d.value.toFixed(2)}`
         );
     })
     .on("mousemove",e=>{
@@ -641,18 +687,21 @@ function drawScatterFIP(){
     })
     .on("mouseleave",()=>{
       tooltip.style("opacity",0);
-    });
+    })
+    .transition()
+    .duration(900)
+    .ease(d3.easeCubicOut)
+    .attr("y",d=>y(d.value))
+    .attr("height",d=>innerHeight-y(d.value));
 
   const legend=d3.select("#legend-container");
-  const items=legend.selectAll(".legend-item")
-    .data(decadePitching)
-    .enter()
-    .append("div")
-    .attr("class","legend-item");
-  items.append("span")
-    .attr("class","legend-swatch")
-    .style("background-color",d=>decadeColors[d.decade]);
-  items.append("span").text(d=>d.decade);
+  metrics.forEach(m=>{
+    const item=legend.append("div").attr("class","legend-item");
+    item.append("span")
+      .attr("class","legend-swatch")
+      .style("background-color",colors[m]);
+    item.append("span").text(m);
+  });
 }
 
 function setEraButtons(activeBtn){
