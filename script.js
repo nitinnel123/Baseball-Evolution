@@ -1,9 +1,10 @@
 const eras={
-  all:{key:"all",label:"All Eras",start:1970,end:2015},
-  expansion:{key:"expansion",label:"Expansion Era",start:1970,end:1992},
-  steroid:{key:"steroid",label:"Steroid Era",start:1993,end:2004},
-  modern:{key:"modern",label:"Modern Era",start:2005,end:2015}
+  all:{key:"all",label:"All Eras (1970–2015)",start:1970,end:2015},
+  expansion:{key:"expansion",label:"Expansion Era (1970–1992)",start:1970,end:1992},
+  steroid:{key:"steroid",label:"Steroid Era (1993–2004)",start:1993,end:2004},
+  modern:{key:"modern",label:"Modern Era (2005–2015)",start:2005,end:2015}
 };
+
 const eraList=[eras.expansion,eras.steroid,eras.modern];
 const eraFill={
   expansion:"rgba(59,130,246,0.10)",
@@ -11,37 +12,26 @@ const eraFill={
   modern:"rgba(34,197,94,0.10)"
 };
 
-const decades=[
-  {id:"1970s",label:"1970–1979",start:1970,end:1979},
-  {id:"1980s",label:"1980–1989",start:1980,end:1989},
-  {id:"1990s",label:"1990–1999",start:1990,end:1999},
-  {id:"2000s",label:"2000–2009",start:2000,end:2009},
-  {id:"2010s",label:"2010–2015",start:2010,end:2015}
-];
-
-const eraDecades={
-  all:["1970s","1980s","1990s","2000s","2010s"],
-  expansion:["1970s","1980s"],
-  steroid:["1990s","2000s"],
-  modern:["2010s"]
-};
-
-const decadeColors={
-  "1970s":"#3b82f6",
-  "1980s":"#a855f7",
-  "1990s":"#ef4444",
-  "2000s":"#fb923c",
-  "2010s":"#22c55e"
-};
-
 let runsSeries=[];
 let ttoSeries=[];
 let opsSeries=[];
 let pitchSeries=[];
-let decadeBatting=[];
-let decadePitching=[];
 let currentView="ops";
 let currentEra="all";
+
+const hitterEraStats={
+  all:new Map(),
+  expansion:new Map(),
+  steroid:new Map(),
+  modern:new Map()
+};
+
+const pitcherEraStats={
+  all:new Map(),
+  expansion:new Map(),
+  steroid:new Map(),
+  modern:new Map()
+};
 
 const btnOPS=document.getElementById("view-ops");
 const btnFIP=document.getElementById("view-fip");
@@ -99,22 +89,100 @@ function addEraLegend(g,innerWidth){
   });
 }
 
-function filteredDecadeBatting(){
-  const allowed=eraDecades[currentEra];
-  return decadeBatting.filter(d=>allowed.includes(d.decade));
+function eraKeyForYear(y){
+  if(y<1970||y>2015)return null;
+  if(y<=1992)return "expansion";
+  if(y<=2004)return "steroid";
+  return "modern";
 }
 
-function filteredDecadePitching(){
-  const allowed=eraDecades[currentEra];
-  return decadePitching.filter(d=>allowed.includes(d.decade));
+function getTopHittersForEra(eraKey,limit){
+  const map=hitterEraStats[eraKey==="all"?"all":eraKey];
+  const arr=[];
+  map.forEach(agg=>{
+    const AB=agg.AB||0;
+    const H=agg.H||0;
+    const BB=agg.BB||0;
+    const SO=agg.SO||0;
+    const HBP=agg.HBP||0;
+    const SF=agg.SF||0;
+    const DBL=agg.DBL||0;
+    const TRP=agg.TRP||0;
+    const HR=agg.HR||0;
+    const PA=AB+BB+HBP+SF;
+    if(PA<300)return;
+    const AVG=AB>0?H/AB:NaN;
+    const sng=H-DBL-TRP-HR;
+    const TB=(sng>0?sng:0)+2*DBL+3*TRP+4*HR;
+    const SLG=AB>0?TB/AB:NaN;
+    const obpDen=AB+BB+HBP+SF;
+    const OBP=obpDen>0?(H+BB+HBP)/obpDen:NaN;
+    const OPS=OBP+SLG;
+    const HR_rate=PA>0?HR/PA:NaN;
+    const K_rate=PA>0?SO/PA:NaN;
+    const BB_rate=PA>0?BB/PA:NaN;
+    if(!isFinite(OPS))return;
+    arr.push({
+      playerID:agg.playerID,
+      name:agg.name,
+      AVG,
+      OPS,
+      HR_rate,
+      K_rate,
+      BB_rate,
+      PA
+    });
+  });
+  arr.sort((a,b)=>b.OPS-a.OPS);
+  return arr.slice(0,limit);
+}
+
+function getTopPitchersForEra(eraKey,limit){
+  const map=pitcherEraStats[eraKey==="all"?"all":eraKey];
+  const arr=[];
+  map.forEach(agg=>{
+    const IPouts=agg.IPouts||0;
+    const IP=IPouts/3;
+    if(IP<300)return;
+    const SO=agg.SO||0;
+    const BB=agg.BB||0;
+    const HBP=agg.HBP||0;
+    const HR=agg.HR||0;
+    const ER=agg.ER||0;
+    const ERA=IP>0?9*ER/IP:NaN;
+    const K9=IP>0?9*SO/IP:NaN;
+    const FIP=IP>0?((13*HR+3*(BB+HBP)-2*SO)/IP)+3.1:NaN;
+    if(!isFinite(K9))return;
+    arr.push({
+      playerID:agg.playerID,
+      name:agg.name,
+      IP,
+      ERA,
+      K9,
+      FIP
+    });
+  });
+  arr.sort((a,b)=>b.K9-a.K9);
+  return arr.slice(0,limit);
 }
 
 Promise.all([
   d3.csv("datasets/Batting.csv",d3.autoType),
-  d3.csv("datasets/Pitching.csv",d3.autoType)
-]).then(([batRaw,pitRaw])=>{
+  d3.csv("datasets/Pitching.csv",d3.autoType),
+  d3.csv("datasets/Master.csv",d3.autoType)
+]).then(([batRaw,pitRaw,masterRaw])=>{
   const yearMin=1970;
   const yearMax=2015;
+
+  const nameMap=new Map();
+  masterRaw.forEach(r=>{
+    const id=r.playerID;
+    const first=r.nameFirst||"";
+    const last=r.nameLast||"";
+    const given=r.nameGiven||"";
+    const name=(first||last?`${first} ${last}`.trim():given)||id;
+    nameMap.set(id,name);
+  });
 
   const batYearMap=new Map();
   batRaw.forEach(d=>{
@@ -150,6 +218,87 @@ Promise.all([
     agg.HBP+=(d.HBP||0);
     agg.HR+=(d.HR||0);
     agg.ER+=(d.ER||0);
+  });
+
+  batRaw.forEach(d=>{
+    const y=d.yearID;
+    if(y<yearMin||y>yearMax)return;
+    const era=eraKeyForYear(y);
+    if(!era)return;
+    const pid=d.playerID;
+    const AB=d.AB||0;
+    const H=d.H||0;
+    const BB=d.BB||0;
+    const SO=d.SO||0;
+    const HBP=d.HBP||0;
+    const SF=d.SF||0;
+    const DBL=d["2B"]||0;
+    const TRP=d["3B"]||0;
+    const HR=d.HR||0;
+    const PA=AB+BB+HBP+SF;
+    if(PA<=0&&AB<=0)return;
+
+    function update(mapKey){
+      const m=hitterEraStats[mapKey];
+      let agg=m.get(pid);
+      if(!agg){
+        agg={
+          playerID:pid,
+          name:nameMap.get(pid)||pid,
+          AB:0,H:0,BB:0,SO:0,HBP:0,SF:0,DBL:0,TRP:0,HR:0
+        };
+        m.set(pid,agg);
+      }
+      agg.AB+=AB;
+      agg.H+=H;
+      agg.BB+=BB;
+      agg.SO+=SO;
+      agg.HBP+=HBP;
+      agg.SF+=SF;
+      agg.DBL+=DBL;
+      agg.TRP+=TRP;
+      agg.HR+=HR;
+    }
+
+    update("all");
+    update(era);
+  });
+
+  pitRaw.forEach(d=>{
+    const y=d.yearID;
+    if(y<yearMin||y>yearMax)return;
+    const era=eraKeyForYear(y);
+    if(!era)return;
+    const pid=d.playerID;
+    const IPouts=d.IPouts||0;
+    const SO=d.SO||0;
+    const BB=d.BB||0;
+    const HBP=d.HBP||0;
+    const HR=d.HR||0;
+    const ER=d.ER||0;
+    if(IPouts<=0)return;
+
+    function update(mapKey){
+      const m=pitcherEraStats[mapKey];
+      let agg=m.get(pid);
+      if(!agg){
+        agg={
+          playerID:pid,
+          name:nameMap.get(pid)||pid,
+          IPouts:0,SO:0,BB:0,HBP:0,HR:0,ER:0
+        };
+        m.set(pid,agg);
+      }
+      agg.IPouts+=IPouts;
+      agg.SO+=SO;
+      agg.BB+=BB;
+      agg.HBP+=HBP;
+      agg.HR+=HR;
+      agg.ER+=ER;
+    }
+
+    update("all");
+    update(era);
   });
 
   const FIP_CONST=3.1;
@@ -203,67 +352,6 @@ Promise.all([
       pitchSeries.push({year:y,era:ERA,fip:FIP});
     }
   }
-
-  decades.forEach(dec=>{
-    let AB=0,H=0,R=0,BB=0,SO=0,HBP=0,SF=0,DBL=0,TRP=0,HR=0;
-    let IPouts=0,pSO=0,pBB=0,pHBP=0,pHR=0,ER=0;
-
-    for(let y=dec.start;y<=dec.end;y++){
-      const bat=batYearMap.get(y);
-      const pit=pitYearMap.get(y);
-      if(bat){
-        AB+=bat.AB;
-        H+=bat.H;
-        R+=bat.R;
-        BB+=bat.BB;
-        SO+=bat.SO;
-        HBP+=bat.HBP;
-        SF+=bat.SF;
-        DBL+=bat.DBL;
-        TRP+=bat.TRP;
-        HR+=bat.HR;
-      }
-      if(pit){
-        IPouts+=pit.IPouts;
-        pSO+=pit.SO;
-        pBB+=pit.BB;
-        pHBP+=pit.HBP;
-        pHR+=pit.HR;
-        ER+=pit.ER;
-      }
-    }
-
-    const PA=AB+BB+HBP+SF;
-    const AVG=AB>0?H/AB:NaN;
-    const hrRate=PA>0?HR/PA:NaN;
-    const sng=H-DBL-TRP-HR;
-    const TB=(sng>0?sng:0)+2*DBL+3*TRP+4*HR;
-    const SLG=AB>0?TB/AB:NaN;
-    const obpDen=AB+BB+HBP+SF;
-    const OBP=obpDen>0?(H+BB+HBP)/obpDen:NaN;
-    const OPS=OBP+SLG;
-
-    const IP=IPouts/3;
-    const K9=IP>0?(pSO*9)/IP:NaN;
-    const ERA=IP>0?(ER*9)/IP:NaN;
-    const FIP_val=IP>0?((13*pHR+3*(pBB+pHBP)-2*pSO)/IP)+FIP_CONST:NaN;
-
-    decadeBatting.push({
-      decade:dec.id,
-      label:dec.label,
-      AVG,
-      HR_per_PA:hrRate,
-      OPS
-    });
-
-    decadePitching.push({
-      decade:dec.id,
-      label:dec.label,
-      K_per_9:K9,
-      ERA,
-      FIP:FIP_val
-    });
-  });
 
   drawRunsChart();
   drawTTOChart();
@@ -477,9 +565,11 @@ function drawEraFipChart(){
 function drawScatterOPS(){
   d3.select("#scatter-container").selectAll("*").remove();
   d3.select("#legend-container").selectAll("*").remove();
-  scatterTitle.textContent="Decade Hitting Dumbbell Chart: AVG → OPS (positioned by HR%)";
 
-  const data=filteredDecadeBatting();
+  const eraLabel=eras[currentEra].label;
+  scatterTitle.textContent=`Top Hitters by OPS — ${eraLabel} (bubble size = OPS)`;
+
+  const data=getTopHittersForEra(currentEra,25);
   if(!data.length)return;
 
   const svg=d3.select("#scatter-container").append("svg")
@@ -488,100 +578,81 @@ function drawScatterOPS(){
   const bbox=svg.node().getBoundingClientRect();
   const width=bbox.width;
   const height=bbox.height;
-  const margin={top:50,right:30,bottom:50,left:80};
+  const margin={top:40,right:20,bottom:40,left:20};
   const innerWidth=width-margin.left-margin.right;
   const innerHeight=height-margin.top-margin.bottom;
   const g=svg.append("g").attr("transform",`translate(${margin.left},${margin.top})`);
 
-  const x=d3.scaleLinear()
-    .domain([d3.min(data,d=>d.AVG),d3.max(data,d=>d.OPS)])
-    .nice()
-    .range([0,innerWidth]);
+  const cols=5;
+  const rows=Math.ceil(data.length/cols);
+  const colWidth=innerWidth/cols;
+  const rowHeight=innerHeight/rows;
 
-  const y=d3.scaleLinear()
-    .domain(d3.extent(data,d=>d.HR_per_PA))
-    .nice()
-    .range([innerHeight,0]);
+  const rScale=d3.scaleSqrt()
+    .domain(d3.extent(data,d=>d.OPS))
+    .range([12,30]);
 
-  const color=d3.scaleOrdinal()
-    .domain(data.map(d=>d.decade))
-    .range(["#3b82f6","#a855f7","#ef4444","#fb923c","#22c55e"]);
-
-  g.append("g")
-    .attr("transform",`translate(0,${innerHeight})`)
-    .call(d3.axisBottom(x));
-
-  g.append("g")
-    .call(d3.axisLeft(y).tickFormat(d3.format(".1%")));
-
-  g.append("text")
-    .attr("x",innerWidth/2)
-    .attr("y",-20)
-    .attr("text-anchor","middle")
-    .attr("fill","#111827")
-    .text("Decade Hitting: AVG (left) → OPS (right), positioned by HR%");
-
-  const rows=g.selectAll(".dumbbell")
+  const nodes=g.selectAll(".player-node")
     .data(data)
     .enter()
     .append("g")
-    .attr("class","dumbbell")
-    .attr("transform",d=>`translate(0,${y(d.HR_per_PA)})`);
+    .attr("class","player-node")
+    .attr("transform",(d,i)=>{
+      const col=i%cols;
+      const row=Math.floor(i/cols);
+      const cx=colWidth*(col+0.5);
+      const cy=rowHeight*(row+0.5);
+      return `translate(${cx},${cy})`;
+    });
 
-  rows.append("line")
-    .attr("x1",d=>x(d.AVG))
-    .attr("x2",d=>x(d.OPS))
-    .attr("stroke","#9ca3af")
-    .attr("stroke-width",2);
-
-  rows.append("circle")
-    .attr("cx",d=>x(d.AVG))
-    .attr("r",7)
-    .attr("fill",d=>color(d.decade))
+  nodes.append("circle")
+    .attr("r",d=>rScale(d.OPS))
+    .attr("fill","#22c55e")
+    .attr("stroke","#14532d")
+    .attr("stroke-width",1.2)
     .on("mouseenter",(e,d)=>{
       tooltip.style("opacity",1).html(
-        `<strong>${d.label}</strong><br>`+
-        `AVG: ${d.AVG.toFixed(3)}<br>`+
-        `HR%: ${(d.HR_per_PA*100).toFixed(2)}%`
-      );
-    })
-    .on("mousemove",e=>{
-      tooltip.style("left",e.pageX+12+"px").style("top",e.pageY-10+"px");
-    })
-    .on("mouseleave",()=>tooltip.style("opacity",0));
-
-  rows.append("circle")
-    .attr("cx",d=>x(d.OPS))
-    .attr("r",7)
-    .attr("fill",d=>color(d.decade))
-    .on("mouseenter",(e,d)=>{
-      tooltip.style("opacity",1).html(
-        `<strong>${d.label}</strong><br>`+
+        `<strong>${d.name}</strong><br>`+
         `OPS: ${d.OPS.toFixed(3)}<br>`+
-        `HR%: ${(d.HR_per_PA*100).toFixed(2)}%`
+        `AVG: ${d.AVG.toFixed(3)}<br>`+
+        `HR%: ${(d.HR_rate*100).toFixed(2)}%<br>`+
+        `BB%: ${(d.BB_rate*100).toFixed(2)}%<br>`+
+        `K%: ${(d.K_rate*100).toFixed(2)}%<br>`+
+        `PA: ${d.PA.toFixed(0)}`
       );
     })
     .on("mousemove",e=>{
       tooltip.style("left",e.pageX+12+"px").style("top",e.pageY-10+"px");
     })
     .on("mouseleave",()=>tooltip.style("opacity",0));
+
+  nodes.append("text")
+    .attr("text-anchor","middle")
+    .attr("dy","0.35em")
+    .attr("fill","#ffffff")
+    .attr("font-size","0.7rem")
+    .text(d=>{
+      const parts=d.name.split(" ");
+      const last=parts[parts.length-1]||"";
+      return last.length>12?last.slice(0,11)+"…":last;
+    });
 
   const legend=d3.select("#legend-container");
-  data.forEach(d=>{
-    const item=legend.append("div").attr("class","legend-item");
-    item.append("span")
-      .attr("class","legend-swatch")
-      .style("background-color",color(d.decade));
-    item.append("span").text(d.label);
-  });
+  const item=legend.append("div").attr("class","legend-item");
+  item.append("span")
+    .attr("class","legend-swatch")
+    .style("background-color","#22c55e");
+  item.append("span").text("Bubble size = OPS (top hitters in era)");
 }
 
 function drawScatterFIP(){
   d3.select("#scatter-container").selectAll("*").remove();
   d3.select("#legend-container").selectAll("*").remove();
-  scatterTitle.textContent="Decade Pitching Dumbbell Chart: ERA → FIP (positioned by K/9)";
 
-  const data=filteredDecadePitching();
+  const eraLabel=eras[currentEra].label;
+  scatterTitle.textContent=`Top Pitchers by K/9 — ${eraLabel} (bubble size = K/9)`;
+
+  const data=getTopPitchersForEra(currentEra,25);
   if(!data.length)return;
 
   const svg=d3.select("#scatter-container").append("svg")
@@ -590,60 +661,45 @@ function drawScatterFIP(){
   const bbox=svg.node().getBoundingClientRect();
   const width=bbox.width;
   const height=bbox.height;
-  const margin={top:50,right:30,bottom:50,left:80};
+  const margin={top:40,right:20,bottom:40,left:20};
   const innerWidth=width-margin.left-margin.right;
   const innerHeight=height-margin.top-margin.bottom;
   const g=svg.append("g").attr("transform",`translate(${margin.left},${margin.top})`);
 
-  const x=d3.scaleLinear()
-    .domain([d3.min(data,d=>d.ERA),d3.max(data,d=>d.FIP)])
-    .nice()
-    .range([0,innerWidth]);
+  const cols=5;
+  const rows=Math.ceil(data.length/cols);
+  const colWidth=innerWidth/cols;
+  const rowHeight=innerHeight/rows;
 
-  const y=d3.scaleLinear()
-    .domain(d3.extent(data,d=>d.K_per_9))
-    .nice()
-    .range([innerHeight,0]);
+  const rScale=d3.scaleSqrt()
+    .domain(d3.extent(data,d=>d.K9))
+    .range([12,30]);
 
-  const color=d3.scaleOrdinal()
-    .domain(data.map(d=>d.decade))
-    .range(["#3b82f6","#a855f7","#ef4444","#fb923c","#22c55e"]);
-
-  g.append("g")
-    .attr("transform",`translate(0,${innerHeight})`)
-    .call(d3.axisBottom(x));
-
-  g.append("g").call(d3.axisLeft(y));
-
-  g.append("text")
-    .attr("x",innerWidth/2)
-    .attr("y",-20)
-    .attr("text-anchor","middle")
-    .attr("fill","#111827")
-    .text("Decade Pitching: ERA (left) → FIP (right), positioned by K/9");
-
-  const rows=g.selectAll(".dumbbell")
+  const nodes=g.selectAll(".player-node")
     .data(data)
     .enter()
     .append("g")
-    .attr("class","dumbbell")
-    .attr("transform",d=>`translate(0,${y(d.K_per_9)})`);
+    .attr("class","player-node")
+    .attr("transform",(d,i)=>{
+      const col=i%cols;
+      const row=Math.floor(i/cols);
+      const cx=colWidth*(col+0.5);
+      const cy=rowHeight*(row+0.5);
+      return `translate(${cx},${cy})`;
+    });
 
-  rows.append("line")
-    .attr("x1",d=>x(d.ERA))
-    .attr("x2",d=>x(d.FIP))
-    .attr("stroke","#9ca3af")
-    .attr("stroke-width",2);
-
-  rows.append("circle")
-    .attr("cx",d=>x(d.ERA))
-    .attr("r",7)
-    .attr("fill",d=>color(d.decade))
+  nodes.append("circle")
+    .attr("r",d=>rScale(d.K9))
+    .attr("fill","#2563eb")
+    .attr("stroke","#1d4ed8")
+    .attr("stroke-width",1.2)
     .on("mouseenter",(e,d)=>{
       tooltip.style("opacity",1).html(
-        `<strong>${d.label}</strong><br>`+
+        `<strong>${d.name}</strong><br>`+
+        `K/9: ${d.K9.toFixed(1)}<br>`+
         `ERA: ${d.ERA.toFixed(2)}<br>`+
-        `K/9: ${d.K_per_9.toFixed(1)}`
+        `FIP: ${d.FIP.toFixed(2)}<br>`+
+        `IP: ${d.IP.toFixed(1)}`
       );
     })
     .on("mousemove",e=>{
@@ -651,30 +707,23 @@ function drawScatterFIP(){
     })
     .on("mouseleave",()=>tooltip.style("opacity",0));
 
-  rows.append("circle")
-    .attr("cx",d=>x(d.FIP))
-    .attr("r",7)
-    .attr("fill",d=>color(d.decade))
-    .on("mouseenter",(e,d)=>{
-      tooltip.style("opacity",1).html(
-        `<strong>${d.label}</strong><br>`+
-        `FIP: ${d.FIP.toFixed(2)}<br>`+
-        `K/9: ${d.K_per_9.toFixed(1)}`
-      );
-    })
-    .on("mousemove",e=>{
-      tooltip.style("left",e.pageX+12+"px").style("top",e.pageY-10+"px");
-    })
-    .on("mouseleave",()=>tooltip.style("opacity",0));
+  nodes.append("text")
+    .attr("text-anchor","middle")
+    .attr("dy","0.35em")
+    .attr("fill","#ffffff")
+    .attr("font-size","0.7rem")
+    .text(d=>{
+      const parts=d.name.split(" ");
+      const last=parts[parts.length-1]||"";
+      return last.length>12?last.slice(0,11)+"…":last;
+    });
 
   const legend=d3.select("#legend-container");
-  data.forEach(d=>{
-    const item=legend.append("div").attr("class","legend-item");
-    item.append("span")
-      .attr("class","legend-swatch")
-      .style("background-color",color(d.decade));
-    item.append("span").text(d.label);
-  });
+  const item=legend.append("div").attr("class","legend-item");
+  item.append("span")
+    .attr("class","legend-swatch")
+    .style("background-color","#2563eb");
+  item.append("span").text("Bubble size = K/9 (top pitchers in era)");
 }
 
 function setEraButtons(activeBtn){
