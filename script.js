@@ -47,6 +47,31 @@ const btnEraModern=document.getElementById("era-modern");
 const scatterTitle=document.getElementById("scatter-title");
 const tooltip=d3.select("#tooltip");
 
+function addEraLegend(g,innerWidth){
+  const legend=g.append("g")
+    .attr("transform",`translate(${innerWidth-130},5)`);
+  const items=[
+    {label:"Expansion Era",color:"rgba(59,130,246,0.15)"},
+    {label:"Steroid Era",color:"rgba(239,68,68,0.15)"},
+    {label:"Modern Era",color:"rgba(34,197,94,0.15)"}
+  ];
+  items.forEach((d,i)=>{
+    const row=legend.append("g")
+      .attr("transform",`translate(0,${i*18})`);
+    row.append("rect")
+      .attr("width",12)
+      .attr("height",12)
+      .attr("fill",d.color)
+      .attr("stroke","#94a3b8");
+    row.append("text")
+      .attr("x",18)
+      .attr("y",10)
+      .attr("font-size","0.75rem")
+      .attr("fill","#111827")
+      .text(d.label);
+  });
+}
+
 function inCurrentEra(year){
   const e=eras[currentEra];
   return year>=e.start&&year<=e.end;
@@ -222,9 +247,9 @@ function drawRunsChart(){
   const data=runsSeries;
   const svg=d3.select("#chart-runs").append("svg")
     .attr("width","100%")
-    .attr("height",240);
+    .attr("height",310);
   const width=svg.node().getBoundingClientRect().width;
-  const height=240;
+  const height=310;
   const margin={top:30,right:20,bottom:40,left:60};
   const innerWidth=width-margin.left-margin.right;
   const innerHeight=height-margin.top-margin.bottom;
@@ -272,6 +297,8 @@ function drawRunsChart(){
     .attr("fill","#111827")
     .attr("text-anchor","middle")
     .text("Runs per game");
+
+  addEraLegend(g,innerWidth);
 }
 
 function drawTTOChart(){
@@ -279,9 +306,9 @@ function drawTTOChart(){
   const data=ttoSeries;
   const svg=d3.select("#chart-tto").append("svg")
     .attr("width","100%")
-    .attr("height",240);
+    .attr("height",310);
   const width=svg.node().getBoundingClientRect().width;
-  const height=240;
+  const height=310;
   const margin={top:30,right:20,bottom:40,left:60};
   const innerWidth=width-margin.left-margin.right;
   const innerHeight=height-margin.top-margin.bottom;
@@ -350,9 +377,9 @@ function drawOpsChart(){
   const data=opsSeries;
   const svg=d3.select("#chart-ops").append("svg")
     .attr("width","100%")
-    .attr("height",240);
+    .attr("height",310);
   const width=svg.node().getBoundingClientRect().width;
-  const height=240;
+  const height=310;
   const margin={top:30,right:20,bottom:40,left:60};
   const innerWidth=width-margin.left-margin.right;
   const innerHeight=height-margin.top-margin.bottom;
@@ -400,6 +427,8 @@ function drawOpsChart(){
     .attr("fill","#111827")
     .attr("text-anchor","middle")
     .text("OPS");
+
+  addEraLegend(g,innerWidth);
 }
 
 function drawEraFipChart(){
@@ -407,9 +436,9 @@ function drawEraFipChart(){
   const data=pitchSeries;
   const svg=d3.select("#chart-era-fip").append("svg")
     .attr("width","100%")
-    .attr("height",240);
+    .attr("height",310);
   const width=svg.node().getBoundingClientRect().width;
-  const height=240;
+  const height=310;
   const margin={top:30,right:20,bottom:40,left:60};
   const innerWidth=width-margin.left-margin.right;
   const innerHeight=height-margin.top-margin.bottom;
