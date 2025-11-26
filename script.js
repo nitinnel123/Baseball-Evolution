@@ -1,6 +1,4 @@
-// ----------------------------------------------------------
-// ERA DEFINITIONS
-// ----------------------------------------------------------
+
 const eras = {
   all: { key: "all", label: "All Eras (1970–2015)", start: 1970, end: 2015 },
   expansion: { key: "expansion", label: "Expansion Era (1970–1992)", start: 1970, end: 1992 },
@@ -15,9 +13,7 @@ const eraColors = {
   all: "#6b7280"
 };
 
-// ----------------------------------------------------------
-// STATE
-// ----------------------------------------------------------
+
 let currentView = "hitters";
 let currentEra = "all";
 
@@ -29,9 +25,7 @@ const btnPitchers = document.getElementById("view-pitchers");
 const scatterTitle = document.getElementById("player-scatter-title");
 const tooltip = d3.select("#tooltip");
 
-// ----------------------------------------------------------
-// HELPERS
-// ----------------------------------------------------------
+
 function eraKeyForYear(y) {
   if (y < 1970 || y > 2015) return null;
   if (y <= 1992) return "expansion";
@@ -39,9 +33,6 @@ function eraKeyForYear(y) {
   return "modern";
 }
 
-// ----------------------------------------------------------
-// PLAYER LOOKUP + DATA LOADING
-// ----------------------------------------------------------
 Promise.all([
   d3.csv("datasets/Batting.csv", d3.autoType),
   d3.csv("datasets/Pitching.csv", d3.autoType),
@@ -59,7 +50,6 @@ Promise.all([
     nameMap.set(id, name.trim());
   });
 
-  // ----- Hitters -----
   batRaw.forEach(d => {
     const era = eraKeyForYear(d.yearID);
     if (!era) return;
@@ -85,7 +75,7 @@ Promise.all([
     update(era);
   });
 
-  // ----- Pitchers -----
+
   pitRaw.forEach(d => {
     const era = eraKeyForYear(d.yearID);
     if (!era) return;
@@ -114,9 +104,7 @@ Promise.all([
   drawPlayerScatter();
 });
 
-// ----------------------------------------------------------
-// DATA EXTRACTION FUNCTIONS
-// ----------------------------------------------------------
+
 function getTopHittersForEra(eraKey, limit) {
   const arr = [];
   hitterEraStats[eraKey].forEach(d => {
@@ -170,9 +158,6 @@ function getTopPitchersForEra(eraKey, limit) {
   return arr.slice(0, limit);
 }
 
-// ----------------------------------------------------------
-// MAIN SCATTERPLOT RENDERER
-// ----------------------------------------------------------
 function drawPlayerScatter() {
 
   d3.select("#player-scatter-container").selectAll("*").remove();
@@ -189,9 +174,6 @@ function drawPlayerScatter() {
   }
 }
 
-// ----------------------------------------------------------
-// HITTER SCATTER
-// ----------------------------------------------------------
 function drawHitterScatter() {
 
   const data = getTopHittersForEra(currentEra, 25);
@@ -240,7 +222,6 @@ function drawHitterScatter() {
     .attr("r", d => rScale(d.OPS) + 8)
     .attr("fill", "transparent")
 
-    // hover
     .on("mouseenter", (event, d) => {
       if (!lockedDatum) {
         d3.select(event.currentTarget.parentNode).raise();
@@ -255,7 +236,6 @@ function drawHitterScatter() {
       if (!lockedDatum) tooltip.style("opacity", 0);
     })
 
-    // click select / deselect
     .on("click", (event, d) => {
       if (lockedDatum === d) {
         lockedDatum = null;
@@ -278,7 +258,6 @@ function drawHitterScatter() {
     }
   });
 
-  // Axis labels
   g.append("text")
     .attr("x", innerW / 2)
     .attr("y", innerH + 40)
@@ -299,9 +278,6 @@ function drawHitterScatter() {
   `);
 }
 
-// ----------------------------------------------------------
-// PITCHER SCATTER
-// ----------------------------------------------------------
 function drawPitcherScatter() {
 
   const data = getTopPitchersForEra(currentEra, 25);
@@ -347,7 +323,6 @@ function drawPitcherScatter() {
     .attr("r", d => rScale(d.FIP) + 8)
     .attr("fill", "transparent")
 
-    // hover
     .on("mouseenter", (event, d) => {
       if (!lockedDatum) {
         d3.select(event.currentTarget.parentNode).raise();
@@ -362,7 +337,7 @@ function drawPitcherScatter() {
       if (!lockedDatum) tooltip.style("opacity", 0);
     })
 
-    // click
+
     .on("click", (event, d) => {
       if (lockedDatum === d) {
         lockedDatum = null;
@@ -385,7 +360,6 @@ function drawPitcherScatter() {
     }
   });
 
-  // Axis labels
   g.append("text")
     .attr("x", innerW / 2)
     .attr("y", innerH + 40)
@@ -406,9 +380,6 @@ function drawPitcherScatter() {
   `);
 }
 
-// ----------------------------------------------------------
-// TOOLTIP + HIGHLIGHT HELPERS
-// ----------------------------------------------------------
 function showTooltip(event, d, type) {
   if (type === "hitter") {
     tooltip.style("opacity", 1)
@@ -441,9 +412,6 @@ function updateHighlight(circles, lockedDatum) {
     .attr("stroke-width", d => d === lockedDatum ? 3 : 1.2);
 }
 
-// ----------------------------------------------------------
-// BUTTON HANDLERS
-// ----------------------------------------------------------
 function setEraButtons(btn) {
   document.querySelectorAll(".era-group .toggle-btn")
     .forEach(b => b.classList.remove("era-active"));

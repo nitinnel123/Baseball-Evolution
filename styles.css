@@ -41,7 +41,6 @@ body {
   min-width: 0;
 }
 
-/* Player scatter only */
 #player-scatter-layout {
   display: flex;
   flex-direction: column;
@@ -75,7 +74,6 @@ body {
   border: 1px solid #111827;
 }
 
-/* Controls */
 .controls-bar {
   display: flex;
   justify-content: space-between;
@@ -119,7 +117,6 @@ body {
   font-weight: 600;
 }
 
-/* Tooltip */
 #tooltip {
   position: absolute;
   pointer-events: none;
@@ -145,7 +142,6 @@ svg text {
   color: #6b7280;
 }
 
-/* Responsive */
 @media (max-width: 960px) {
   #player-scatter-container {
     height: 480px;
