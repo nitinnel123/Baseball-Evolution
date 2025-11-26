@@ -2,40 +2,22 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Baseball Era Dashboard</title>
+  <title>Baseball Era Player Comparison</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="styles.css" />
   <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
+
 <body>
   <div id="app">
     <header id="page-header">
-      <h1>Baseball Run Environment and Player Performance (1970–2015)</h1>
+      <h1>Baseball Player Comparison Across Eras (1970–2015)</h1>
       <p>
-        Explore how the league scoring environment changed over time and how the
-        top hitters and pitchers compare across eras.
+        Explore how the top hitters and pitchers compare across different run environments
+        and historical eras in baseball.
       </p>
     </header>
 
-    <!-- Top 4 league-level charts -->
-    <section id="top-charts" class="panel-group">
-      <div class="chart-grid">
-        <div class="panel">
-          <div id="chart-runs" class="chart-box"></div>
-        </div>
-        <div class="panel">
-          <div id="chart-tto" class="chart-box"></div>
-        </div>
-        <div class="panel">
-          <div id="chart-ops" class="chart-box"></div>
-        </div>
-        <div class="panel">
-          <div id="chart-era-fip" class="chart-box"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Player scatter section -->
     <section id="player-section" class="panel-group">
       <div class="panel">
         <div class="controls-bar">
@@ -43,6 +25,7 @@
             <button id="view-hitters" class="toggle-btn active">Hitters</button>
             <button id="view-pitchers" class="toggle-btn">Pitchers</button>
           </div>
+
           <div class="toggle-group era-group">
             <button id="era-all" class="toggle-btn era-active">All</button>
             <button id="era-expansion" class="toggle-btn">Expansion</button>
@@ -59,6 +42,7 @@
         </div>
       </div>
     </section>
+
   </div>
 
   <div id="tooltip"></div>
