@@ -198,7 +198,7 @@ function drawHitterScatter() {
 
   const x = d3.scaleLinear().domain([0.07, 0.35]).range([0, innerW]);
   const y = d3.scaleLinear().domain([0.00, 0.08]).range([innerH, 0]);
-  const rScale = d3.scaleSqrt().domain([0.4, 1.1]).range([6, 22]);
+  const rScale = d3.scaleSqrt().domain([0.4, 1.1]).range([4, 14]);
 
   g.append("g")
     .attr("transform", `translate(0,${innerH})`)
